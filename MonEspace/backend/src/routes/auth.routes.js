@@ -10,6 +10,10 @@ const pool = require("../db/connection");
 // Création d'un router pour regrouper nos routes d'authentification
 const router = express.Router();
 
+const jwt = require("jsonwebtoken");
+
+const authMiddleware = require("../middleware/auth");
+
 // Route pour l'inscription
 router.post("/register", async (req, res) => {
     try {
@@ -95,11 +99,82 @@ router.post("/register", async (req, res) => {
     }
 });
 
-router.post("/login", (req, res) => {
-    console.log(req.body);
+router.post("/login", async (req, res) => {
+    try {
+        const { identifier, password } = req.body;
 
-    res.json({
-        message: "The connection is working properly"
+        // Vérification des champs
+        if (!identifier || !password) {
+            return res.status(400).json({
+                message: "Identifier and password are required"
+            });
+        }
+
+        // Recherche par email OU username
+        const result = await pool.query(
+            `SELECT id, username, email, password_hash
+             FROM users
+             WHERE email = $1 OR username = $1`,
+            [identifier]
+        );
+
+        // Aucun utilisateur trouvé
+        if (result.rows.length === 0) {
+            return res.status(401).json({
+                message: "Invalid credentials"
+            });
+        }
+
+        const user = result.rows[0];
+
+        // Vérification du mot de passe
+        const passwordMatch = await bcrypt.compare(
+            password,
+            user.password_hash
+        );
+
+        if (!passwordMatch) {
+            return res.status(401).json({
+                message: "Invalid credentials"
+            });
+        }
+
+        // Création du JWT
+        const token = jwt.sign(
+            {
+                userId: user.id,
+                username: user.username
+            },
+            process.env.JWT_SECRET,
+            {
+                expiresIn: "1h"
+            }
+        );
+
+        // Réponse au frontend
+        return res.status(200).json({
+            message: "Login successful",
+            token: token,
+            user: {
+                id: user.id,
+                username: user.username,
+                email: user.email
+            }
+        });
+
+    } catch (error) {
+        console.error("Login error:", error);
+
+        return res.status(500).json({
+            message: "Internal server error"
+        });
+    }
+});
+
+router.get("/me", authMiddleware, (req, res) => {
+    return res.status(200).json({
+        message: "Authentication successful",
+        user: req.user
     });
 });
 
