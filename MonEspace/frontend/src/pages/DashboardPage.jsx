@@ -1,7 +1,25 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_URL } from "../api.js";
 
 function DashboardPage() {
     const navigate = useNavigate();
+    const [board, setBoard] = useState(null);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        const token = localStorage.getItem("token");
+
+        fetch(`${API_URL}/api/boards`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(async (response) => {
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || "Chargement impossible.");
+                setBoard(data.board);
+            })
+            .catch((requestError) => setError(requestError.message));
+    }, []);
     const handleLogout = () => {
         localStorage.removeItem("token");
         navigate("/login", { replace: true });
@@ -21,8 +39,17 @@ function DashboardPage() {
             </header>
 
             <section className="board-content" aria-live="polite">
-                <p className="eyebrow">Espace sécurisé</p>
-                <h2>Bienvenue dans MonEspace</h2>
+                {board ? (
+                    <>
+                        <p className="eyebrow">Mon espace personnel</p>
+                        <h2>{board.name}</h2>
+                        <p>Ton tableau est prêt.</p>
+                    </>
+                ) : error ? (
+                    <p className="error-message">{error}</p>
+                ) : (
+                    <p>Chargement de ton tableau...</p>
+                )}
             </section>
         </main>
     );
