@@ -158,6 +158,47 @@ input {
   color: #475569;
 }
 
+.dashboard-shell {
+  min-height: 100vh;
+  padding: 32px clamp(20px, 6vw, 88px);
+  background:
+    radial-gradient(circle at 5% 4%, #dbeafe 0, transparent 26%),
+    #f4f6fb;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 26px;
+  border-bottom: 1px solid #dbe2ea;
+}
+
+.dashboard-header .brand {
+  margin: 0;
+}
+
+.logout-button {
+  border: 1px solid #dbe2ea;
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: #334155;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.board-content {
+  max-width: 760px;
+  margin: 56px auto;
+}
+
+.board-content h2 {
+  margin: 8px 0;
+  font-size: 30px;
+}
+
 @media (max-width: 520px) {
   .app-shell {
     padding: 16px;
