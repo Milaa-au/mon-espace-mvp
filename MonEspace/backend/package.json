@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "test:auth-flow": "node --test test/auth-flow.test.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
