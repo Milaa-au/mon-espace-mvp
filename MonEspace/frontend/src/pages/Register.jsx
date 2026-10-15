@@ -1,6 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { API_URL } from "../api.js";
 
 function Register() {
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         username: "",
         email: "",
@@ -8,6 +11,7 @@ function Register() {
     });
 
     const [message, setMessage] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleChange = (e) => {
         setFormData({
@@ -19,9 +23,12 @@ function Register() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        setIsSubmitting(true);
+        setMessage("");
+
         try {
             const response = await fetch(
-                "http://localhost:5000/api/auth/register",
+            `${API_URL}/api/auth/register`,
                 {
                     method: "POST",
                     headers: {
@@ -34,13 +41,15 @@ function Register() {
             const data = await response.json();
 
             if (response.ok) {
-                setMessage("Compte créé avec succès ✅");
+                navigate("/login?registered=1", { replace: true });
             } else {
-                setMessage(data.message);
+                setMessage(data.message || "Inscription impossible.");
             }
 
         } catch (error) {
             setMessage("Erreur serveur");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -74,7 +83,7 @@ function Register() {
                 />
 
                 <button type="submit">
-                    S'inscrire
+                    {isSubmitting ? "Création..." : "S'inscrire"}
                 </button>
             </form>
 

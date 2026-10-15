@@ -1,12 +1,19 @@
 import { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { API_URL } from "../api.js";
 
 function Login() {
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [formData, setFormData] = useState({
         identifier: "",
         password: ""
     });
 
-    const [message, setMessage] = useState("");
+    const [message, setMessage] = useState(
+        searchParams.get("registered") === "1" ? "Compte créé. Connecte-toi." : ""
+    );
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleChange = (e) => {
         setFormData({
@@ -18,9 +25,12 @@ function Login() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        setIsSubmitting(true);
+        setMessage("");
+
         try {
             const response = await fetch(
-                "http://localhost:5000/api/auth/login",
+            `${API_URL}/api/auth/login`,
                 {
                     method: "POST",
                     headers: {
@@ -37,15 +47,15 @@ function Login() {
                 // Sauvegarde du JWT
                 localStorage.setItem("token", data.token);
 
-                setMessage("Connexion réussie ✅");
-
-                console.log(data);
+                navigate("/dashboard", { replace: true });
             } else {
-                setMessage(data.message);
+                setMessage(data.message || "Connexion impossible.");
             }
 
         } catch (error) {
             setMessage("Erreur serveur");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -71,7 +81,7 @@ function Login() {
                 />
 
                 <button type="submit">
-                    Se connecter
+                    {isSubmitting ? "Connexion..." : "Se connecter"}
                 </button>
             </form>
 
