@@ -1,6 +1,7 @@
 
 const pool = require("../db/connection");
 
+// Créer un widget et ses données spécifiques.
 async function createWidget({
     boardId,
     type,
@@ -16,39 +17,36 @@ async function createWidget({
     try {
         await client.query("BEGIN");
 
-        const widgetResult = await client.query(
+        const result = await client.query(
             `INSERT INTO widgets
                 (board_id, type, pos_x, pos_y, width, height, z_index)
              VALUES ($1, $2, $3, $4, $5, $6, $7)
-             RETURNING *`,
+             RETURNING widget_id`,
             [boardId, type, posX, posY, width, height, zIndex]
         );
 
-        const widget = widgetResult.rows[0];
+        const widgetId = result.rows[0].widget_id;
 
         if (type === "postit") {
             await client.query(
                 `INSERT INTO postit (widget_id, content, color)
                  VALUES ($1, $2, $3)`,
-                [widget.widget_id, data.content ?? "", data.color ?? "yellow"]
+                [widgetId, data.content ?? "", data.color ?? "yellow"]
             );
         } else if (type === "timer") {
             await client.query(
                 `INSERT INTO timer (widget_id, label, duration_seconds)
                  VALUES ($1, $2, $3)`,
                 [
-                    widget.widget_id,
+                    widgetId,
                     data.label ?? "Timer",
                     data.durationSeconds ?? 1500,
                 ]
             );
-        } else if (type === "planning") {
-            // Un planning peut être créé sans événement.
-            // Les événements seront ajoutés séparément.
         }
 
         await client.query("COMMIT");
-        return getWidgetById(widget.widget_id, client);
+        return await getWidgetById(widgetId);
     } catch (error) {
         await client.query("ROLLBACK");
         throw error;
@@ -57,6 +55,7 @@ async function createWidget({
     }
 }
 
+// Récupérer un widget et ses données associées.
 async function getWidgetById(widgetId, db = pool) {
     const result = await db.query(
         `SELECT
@@ -106,6 +105,7 @@ async function getWidgetById(widgetId, db = pool) {
     return result.rows[0] ?? null;
 }
 
+// Récupérer tous les widgets d'un tableau.
 async function getWidgetsByBoardId(boardId, db = pool) {
     const result = await db.query(
         `SELECT
@@ -156,6 +156,7 @@ async function getWidgetsByBoardId(boardId, db = pool) {
     return result.rows;
 }
 
+// Modifier la position et les dimensions d'un widget.
 async function updateWidget(widgetId, fields) {
     const allowedFields = {
         posX: "pos_x",
@@ -167,18 +168,16 @@ async function updateWidget(widgetId, fields) {
 
     const updates = [];
     const values = [];
-    let index = 1;
 
     for (const [key, column] of Object.entries(allowedFields)) {
         if (fields[key] !== undefined) {
-            updates.push(`${column} = $${index}`);
             values.push(fields[key]);
-            index += 1;
+            updates.push(`${column} = $${values.length}`);
         }
     }
 
     if (updates.length === 0) {
-        return getWidgetById(widgetId);
+        return null;
     }
 
     values.push(widgetId);
@@ -186,7 +185,7 @@ async function updateWidget(widgetId, fields) {
     const result = await pool.query(
         `UPDATE widgets
          SET ${updates.join(", ")}
-         WHERE widget_id = $${index}
+         WHERE widget_id = $${values.length}
          RETURNING widget_id`,
         values
     );
@@ -198,6 +197,7 @@ async function updateWidget(widgetId, fields) {
     return getWidgetById(widgetId);
 }
 
+// Supprimer un widget.
 async function deleteWidget(widgetId) {
     const result = await pool.query(
         `DELETE FROM widgets
