@@ -112,9 +112,7 @@ function DashboardPage() {
                             id={postIt.id}
                             title={postIt.title}
                             content={postIt.content}
-                            onChange={(content) =>
-                                updatePostIt(postIt.id, content)
-                            }
+                            onChange={(newContent) => updatePostIt(postIt.id, newContent)}
                             onDelete={deletePostIt}
                         />
                     ))}
