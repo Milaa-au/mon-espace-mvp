@@ -1,0 +1,25 @@
+
+.postit-widget__textarea {
+  display: block;
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #422006;
+  font: inherit;
+  line-height: 1.6;
+  box-sizing: border-box;
+}
+
+.postit-widget__textarea::placeholder {
+  color: #a16207;
+  opacity: 0.8;
+}
+
+.postit-widget__textarea:focus-visible {
+  outline: 2px solid #ca8a04;
+  outline-offset: 4px;
+  border-radius: 4px;
+}
