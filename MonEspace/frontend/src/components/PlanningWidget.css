@@ -23,3 +23,68 @@
     outline-offset: 2px;
     border-radius: 4px;
 }
+
+.planning-widget__form {
+    display: grid;
+    gap: 12px;
+}
+
+.planning-widget__form label {
+    display: grid;
+    gap: 5px;
+    color: #334155;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.planning-widget__form input,
+.planning-widget__form textarea {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: #1e293b;
+    background: #fff;
+    font: inherit;
+}
+
+.planning-widget__form-actions,
+.planning-widget__event-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.planning-widget__form-actions button,
+.planning-widget__event-actions button {
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 7px 10px;
+    color: #334155;
+    background: #fff;
+    cursor: pointer;
+    font: inherit;
+}
+
+.planning-widget__events ul {
+    display: grid;
+    gap: 12px;
+    padding: 0;
+    list-style: none;
+}
+
+.planning-widget__events li {
+    border-top: 1px solid rgb(30 58 138 / 16%);
+    padding-top: 12px;
+}
+
+.planning-widget__events h3,
+.planning-widget__events p {
+    margin: 0 0 8px;
+    overflow-wrap: anywhere;
+}
+
+.planning-widget__event-actions {
+    margin-top: 10px;
+}
