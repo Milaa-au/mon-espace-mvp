@@ -203,6 +203,45 @@ input {
   color: #b91c1c;
 }
 
+.dashboard-widgets {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.widgets-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #dbe2ea;
+}
+
+.widgets-header h2 {
+  margin: 0;
+}
+
+.add-postit-button {
+  border: 1px solid #dbe2ea;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #334155;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.add-postit-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.postit-grid {
+  position: relative;
+  min-height: 560px;
+  margin-top: 16px;
+}
+
 @media (max-width: 520px) {
   .app-shell {
     padding: 16px;
