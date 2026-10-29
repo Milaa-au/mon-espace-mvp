@@ -1,10 +1,11 @@
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import WidgetContainer from "./WidgetContainer";
 import "./PostItWidget.css";
 
 function PostItWidget({
   id,
+  position,
   title = "Mon Post-it",
   content = "",
   onChange,
@@ -17,11 +18,12 @@ function PostItWidget({
   }, [content]);
 
   function handleChange(event) {
-    const newText = event.target.value;
-    setText(newText);
+    const newContent = event.target.value;
+
+    setText(newContent);
 
     if (onChange) {
-      onChange(newText);
+      onChange(id, newContent);
     }
   }
 
@@ -29,6 +31,13 @@ function PostItWidget({
     <WidgetContainer
       title={title}
       type="postit"
+      id={id}
+      style={{
+        position: "absolute",
+        left: position.x,
+        top: position.y,
+        width: 280,
+      }}
       onDelete={onDelete ? () => onDelete(id) : undefined}
     >
       <textarea

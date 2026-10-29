@@ -19,6 +19,32 @@
     border-bottom: 1px solid #e2e8f0;
 }
 
+.widget-container__drag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #64748b;
+    font-size: 1.25rem;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+}
+
+.widget-container__drag:active {
+    cursor: grabbing;
+}
+
+.widget-container__drag:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+
 .widget-container__title {
     margin: 0;
     overflow-wrap: anywhere;
