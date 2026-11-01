@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { API_URL } from "../api.js";
 import PlanningWidget from "../components/PlanningWidget";
 import PostItWidget from "../components/PostItWidget";
+import TimerWidget from "../components/TimerWidget";
 
 function DashboardPage() {
     const navigate = useNavigate();
@@ -11,6 +12,7 @@ function DashboardPage() {
     const [error, setError] = useState("");
     const [postIts, setPostIts] = useState([]);
     const [planningWidgets, setPlanningWidgets] = useState([]);
+    const [timers, setTimers] = useState([]);
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -35,6 +37,18 @@ function DashboardPage() {
                             id: widget.widget_id,
                             title: "Mon planning",
                             events: Array.isArray(widget.data) ? widget.data : [],
+                            posX: widget.pos_x,
+                            posY: widget.pos_y,
+                        }))
+                );
+                setTimers(
+                    data.widgets
+                        .filter((widget) => widget.type === "timer")
+                        .map((widget) => ({
+                            id: widget.widget_id,
+                            timer: widget.data,
+                            posX: widget.pos_x,
+                            posY: widget.pos_y,
                         }))
                 );
             })
@@ -87,6 +101,95 @@ function DashboardPage() {
                 ...current,
                 { id: widget.widget_id, title: "Mon planning", events: [] },
             ]);
+            setError("");
+        } catch (requestError) {
+            setError(requestError.message);
+        }
+    };
+
+    const addTimer = async () => {
+        if (!board) return;
+
+        try {
+            const column = timers.length % 3;
+            const row = Math.floor(timers.length / 3);
+            const { widget } = await authenticatedRequest("/api/widgets", {
+                method: "POST",
+                body: JSON.stringify({
+                    boardId: board.board_id,
+                    type: "timer",
+                    posX: 24 + column * 304,
+                    posY: 24 + row * 224,
+                    data: { durationSeconds: 1500 },
+                }),
+            });
+            setTimers((current) => [
+                ...current,
+                {
+                    id: widget.widget_id,
+                    timer: widget.data,
+                    posX: widget.pos_x,
+                    posY: widget.pos_y,
+                },
+            ]);
+            setError("");
+        } catch (requestError) {
+            setError(requestError.message);
+        }
+    };
+
+    const timerRequest = async (widgetId, path, options = {}) => {
+        const result = await authenticatedRequest(
+            `/api/widgets/${widgetId}/timer${path}`,
+            options
+        );
+        return result.timer;
+    };
+
+    const updateTimer = (widgetId, timer) =>
+        setTimers((current) =>
+            current.map((item) => item.id === widgetId ? { ...item, timer } : item)
+        );
+
+    const setTimerDuration = async (widgetId, durationSeconds) => {
+        const timer = await timerRequest(widgetId, "/duration", {
+            method: "PATCH",
+            body: JSON.stringify({ durationSeconds }),
+        });
+        updateTimer(widgetId, timer);
+        return timer;
+    };
+
+    const startTimer = async (widgetId) => {
+        const timer = await timerRequest(widgetId, "/start", { method: "POST" });
+        updateTimer(widgetId, timer);
+        return timer;
+    };
+
+    const pauseTimer = async (widgetId) => {
+        const timer = await timerRequest(widgetId, "/pause", { method: "POST" });
+        updateTimer(widgetId, timer);
+        return timer;
+    };
+
+    const resetTimer = async (widgetId) => {
+        const timer = await timerRequest(widgetId, "/reset", { method: "POST" });
+        updateTimer(widgetId, timer);
+        return timer;
+    };
+
+    const refreshTimer = async (widgetId) => {
+        const timer = await timerRequest(widgetId, "");
+        updateTimer(widgetId, timer);
+        return timer;
+    };
+
+    const deleteTimer = async (widgetId) => {
+        try {
+            await authenticatedRequest(`/api/widgets/${widgetId}`, {
+                method: "DELETE",
+            });
+            setTimers((current) => current.filter((item) => item.id !== widgetId));
             setError("");
         } catch (requestError) {
             setError(requestError.message);
@@ -195,6 +298,14 @@ function DashboardPage() {
                         >
                             + Ajouter un planning
                         </button>
+                        <button
+                            type="button"
+                            className="add-postit-button"
+                            onClick={addTimer}
+                            disabled={!board}
+                        >
+                            + Ajouter un timer
+                        </button>
                     </div>
                 </div>
 
@@ -231,6 +342,22 @@ function DashboardPage() {
                                 )
                             }
                             onDelete={deletePlanningWidget}
+                        />
+                    ))}
+                </div>
+                <div className="timer-widget-list">
+                    {timers.map((item) => (
+                        <TimerWidget
+                            key={item.id}
+                            id={item.id}
+                            timer={item.timer}
+                            position={{ x: item.posX, y: item.posY }}
+                            onSetDuration={setTimerDuration}
+                            onStart={startTimer}
+                            onPause={pauseTimer}
+                            onReset={resetTimer}
+                            onRefresh={() => refreshTimer(item.id)}
+                            onDelete={deleteTimer}
                         />
                     ))}
                 </div>

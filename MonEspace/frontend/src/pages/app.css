@@ -256,6 +256,11 @@ input {
   margin-top: 24px;
 }
 
+.timer-widget-list {
+  position: relative;
+  min-height: 400px;
+  margin-top: 24px;
+}
 @media (max-width: 520px) {
   .app-shell {
     padding: 16px;

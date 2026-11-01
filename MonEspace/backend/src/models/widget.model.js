@@ -35,11 +35,13 @@ async function createWidget({
             );
         } else if (type === "timer") {
             await client.query(
-                `INSERT INTO timer (widget_id, label, duration_seconds)
-                 VALUES ($1, $2, $3)`,
+                `INSERT INTO timer
+                    (widget_id, label, duration_seconds, remaining_seconds)
+                 VALUES ($1, $2, $3, $4)`,
                 [
                     widgetId,
                     data.label ?? "Timer",
+                    data.durationSeconds ?? 1500,
                     data.durationSeconds ?? 1500,
                 ]
             );
@@ -73,6 +75,7 @@ async function getWidgetById(widgetId, db = pool) {
                     SELECT json_build_object(
                         'label', t.label,
                         'durationSeconds', t.duration_seconds,
+                        'remainingSeconds', t.remaining_seconds,
                         'status', t.status,
                         'startedAt', t.started_at
                     )
@@ -123,6 +126,7 @@ async function getWidgetsByBoardId(boardId, db = pool) {
                     SELECT json_build_object(
                         'label', t.label,
                         'durationSeconds', t.duration_seconds,
+                        'remainingSeconds', t.remaining_seconds,
                         'status', t.status,
                         'startedAt', t.started_at
                     )

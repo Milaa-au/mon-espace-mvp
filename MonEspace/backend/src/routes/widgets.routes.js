@@ -70,6 +70,18 @@ router.post("/", authMiddleware, async (req, res) => {
             });
         }
 
+        if (
+            type === "timer" &&
+            data.durationSeconds !== undefined &&
+            (!Number.isSafeInteger(data.durationSeconds) ||
+                data.durationSeconds < 1 ||
+                data.durationSeconds > 604800)
+        ) {
+            return res.status(400).json({
+                message: "La durée du timer doit être comprise entre 1 seconde et 7 jours.",
+            });
+        }
+
         const boardResult = await pool.query(
             `SELECT board_id
              FROM boards
