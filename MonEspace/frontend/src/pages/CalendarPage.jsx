@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/react/daygrid";
-import interactionPlugin from "@fullcalendar/react/interaction";
-import frLocale from "@fullcalendar/react/locales/fr";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import interactionPlugin from "@fullcalendar/interaction";
+import frLocale from "@fullcalendar/core/locales/fr";
 import { Link } from "react-router-dom";
 import { API_URL } from "../api.js";
 
