@@ -1,75 +1,107 @@
-# MonEspace
+MonEspace
+Un tableau de bord personnel modulaire pour s'organiser au quotidien.
 
-MonEspace est un tableau de bord personnel avec des Post-it, des plannings et des timers. Les widgets sont déplaçables et redimensionnables, leurs données sont sauvegardées par l’API, et une page calendrier regroupe les événements de tous les plannings.
+MonEspace est une application web qui permet de créer un compte puis d'accéder à un tableau blanc sur lequel on dispose librement des « widgets » : des petits modules qui centralisent ses notes, son planning et sa gestion du temps sur un seul écran. Chaque utilisateur a son propre tableau, retrouvé à l'identique à chaque connexion.
 
-## Prérequis
+Projet de fin de spécialisation — Holberton School (MVP, version 1.0).
 
-- Node.js 22 ou plus récent
-- PostgreSQL 14 ou plus récent
-- `psql` disponible dans le terminal
+Fonctionnalités
+Compte utilisateur : inscription, connexion par email ou pseudo, session par token JWT.
+Tableau de bord personnel : un tableau par utilisateur, créé automatiquement à la première visite.
+Trois widgets :
+Post-it : note à mise en forme riche (gras, italique, listes, polices, tailles) grâce à l'éditeur TinyMCE.
+Planning : liste d'événements datés, avec ajout, modification et suppression.
+Timer : minuteur configurable (type Pomodoro) avec démarrer, pause et réinitialisation. Il reste exact après un rechargement de la page.
+Glisser-déposer et redimensionnement : chaque widget se place librement sur l'écran, et sa position et sa taille sont sauvegardées.
+Page Calendrier : vue mensuelle regroupant les événements de tous les plannings, avec création, modification et suppression depuis le calendrier.
+Lanceur de widgets : un menu d'icônes pour ajouter un Post-it, un planning ou un timer.
+Thème clair / sombre, mémorisé d'une visite à l'autre.
+Technologies
+Couche	Technologies
+Frontend	React 19, Vite, React Router, dnd-kit (glisser-déposer), FullCalendar, TinyMCE Cloud
+Backend	Node.js, Express 5, bcrypt, jsonwebtoken
+Base de données	PostgreSQL (driver pg)
+Tests	node:test (API), Playwright (parcours de bout en bout)
+Déploiement	Netlify (frontend), Render (API et base de données)
+Architecture
+Architecture client-serveur en trois couches :
 
-## Base de données
+Navigateur (SPA React)  ──HTTPS / JSON──►  API REST (Express)  ──SQL──►  PostgreSQL
+Le modèle de données repose sur une table widgets générique (type, position, taille, ordre d'empilement) et une table par type de widget : postit, planning_event et timer. Ajouter un nouveau type de widget revient donc à ajouter une table et un composant, sans toucher au système de positionnement.
 
-Crée une base PostgreSQL vide, puis configure `MonEspace/backend/.env` à partir de `MonEspace/backend/.env.example`. Depuis PowerShell, applique les migrations une seule fois dans cet ordre :
+Table	Rôle
+users	Comptes utilisateurs
+boards	Un tableau par utilisateur
+widgets	Widget générique placé sur un tableau
+postit	Contenu et couleur d'un Post-it
+planning_event	Événements d'un planning (plusieurs par widget)
+timer	Durée, temps restant, état et heure de démarrage
+Le timer ne fait pas tourner de compteur côté serveur : il stocke l'heure de démarrage et le temps restant, puis recalcule son état à chaque lecture.
 
-```powershell
+API
+Méthode	Endpoint	Description
+POST	/api/auth/register	Création de compte
+POST	/api/auth/login	Connexion, renvoie un JWT
+GET	/api/auth/me	Utilisateur connecté
+GET	/api/boards	Tableau de l'utilisateur et ses widgets
+POST	/api/widgets	Création d'un widget
+PATCH	/api/widgets/:id	Position, taille ou contenu d'un Post-it
+DELETE	/api/widgets/:id	Suppression d'un widget
+GET, POST	/api/widgets/:widgetId/events	Liste et ajout d'événements
+PATCH, DELETE	/api/widgets/:widgetId/events/:eventId	Modification et suppression d'un événement
+GET	/api/widgets/:widgetId/timer	État du timer
+PATCH	/api/widgets/:widgetId/timer/duration	Changement de durée
+POST	/api/widgets/:widgetId/timer/start, pause, reset	Contrôle du timer
+Toutes les routes, hors inscription et connexion, exigent un token JWT valide dans l'en-tête Authorization: Bearer.
+
+Structure du projet
+MonEspace/
+├── backend/
+│   ├── src/
+│   │   ├── db/            connexion PostgreSQL et migrations SQL
+│   │   ├── middleware/    vérification du JWT
+│   │   ├── models/        accès aux données (widgets, événements, timer)
+│   │   ├── routes/        endpoints REST
+│   │   └── server.js
+│   └── test/              tests de l'API
+├── frontend/
+│   ├── src/
+│   │   ├── components/    WidgetContainer, PostItWidget, PlanningWidget, TimerWidget
+│   │   └── pages/         Login, Register, DashboardPage, CalendarPage
+│   └── e2e/               tests Playwright
+├── netlify.toml           configuration du frontend
+└── render.yaml            configuration de l'API et de la base
+Installation
+Prérequis : Node.js 22+, PostgreSQL 14+ avec psql.
+
+1. Base de données : crée une base vide, puis applique les migrations dans l'ordre.
+
+bash
 createdb monespace
-Set-Location MonEspace/backend
-psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f src/db/migrations/001_create_users.sql
-psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f src/db/migrations/002_create_boards.sql
-psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f src/db/migrations/003_create_widgets.sql
-psql $env:DATABASE_URL -v ON_ERROR_STOP=1 -f src/db/migrations/004_add_timer_remaining_seconds.sql
-```
+cd MonEspace/backend
+psql $DATABASE_URL -v ON_ERROR_STOP=1 -f src/db/migrations/001_create_users.sql
+psql $DATABASE_URL -v ON_ERROR_STOP=1 -f src/db/migrations/002_create_boards.sql
+psql $DATABASE_URL -v ON_ERROR_STOP=1 -f src/db/migrations/003_create_widgets.sql
+psql $DATABASE_URL -v ON_ERROR_STOP=1 -f src/db/migrations/004_add_timer_remaining_seconds.sql
+2. Variables d'environnement : copie les fichiers d'exemple et remplis-les.
 
-Les migrations créent les utilisateurs, tableaux, widgets, événements de planning et l’état persistant des timers. Elles ne sont pas conçues pour être rejouées sur une base déjà initialisée.
+MonEspace/backend/.env.example → MonEspace/backend/.env (DATABASE_URL, JWT_SECRET, FRONTEND_URL, PORT)
+MonEspace/.env.example → MonEspace/.env.local (VITE_API_URL, VITE_TINYMCE_API_KEY)
+3. Lancement : dans deux terminaux.
 
-## Variables d’environnement
+bash
+# API (http://localhost:5000)
+cd MonEspace/backend && npm ci && npm run dev
 
-Frontend : copie `MonEspace/.env.example` vers `MonEspace/.env.local`.
+# Frontend (http://localhost:5173)
+cd MonEspace && npm ci && npm run dev
+Tests : npm test dans MonEspace/backend pour l'API, npm run test:e2e dans MonEspace pour les parcours Playwright.
 
-- `VITE_API_URL` : URL de l’API, par exemple `http://localhost:5000`
-- `VITE_TINYMCE_API_KEY` : clé TinyMCE Cloud configurée pour le domaine frontend
+Déploiement
+Le frontend se déploie sur Netlify (netlify.toml) et l'API avec sa base PostgreSQL sur Render (render.yaml). Après la création de la base, il faut exécuter les migrations 001 à 004 une seule fois, puis renseigner VITE_API_URL côté Netlify et FRONTEND_URL côté Render.
 
-Backend : copie `MonEspace/backend/.env.example` vers `MonEspace/backend/.env`.
-
-- `DATABASE_URL` : URL PostgreSQL
-- `JWT_SECRET` : valeur aléatoire longue utilisée pour signer les sessions
-- `FRONTEND_URL` : origine exacte autorisée en production, sans chemin
-- `CORS_ORIGINS` : origines supplémentaires séparées par des virgules, si nécessaire
-- `PORT` : port HTTP (défaut local : `5000`; Render fournit sa propre valeur)
-- `NODE_ENV` : `development` localement, `production` en hébergement
-
-Ne commite jamais `.env` ou `.env.local`. Aucun secret réel ne doit être placé dans les fichiers `.env.example`.
-
-## Lancement local
-
-Terminal backend :
-
-```powershell
-Set-Location MonEspace/backend
-npm ci
-npm run dev
-```
-
-Terminal frontend :
-
-```powershell
-Set-Location MonEspace
-npm ci
-npm run dev
-```
-
-Vite démarre sur `http://localhost:5173`; l’API démarre sur `http://localhost:5000`.
-
-## Déploiement
-
-Les fichiers `netlify.toml` et `render.yaml` préparent le déploiement du frontend sur Netlify et de l’API/PostgreSQL sur Render. Aucun compte d’hébergement n’est connecté à cet environnement, donc aucun site public n’a été créé ni vérifié.
-
-1. Sur Render, crée une nouvelle Blueprint Instance depuis ce dépôt et vérifie le service `monespace-api` et la base `monespace-db` déclarés dans `render.yaml`. Choisis un plan disponible dans ton compte si le plan gratuit n’est pas proposé.
-2. Dans les variables du service API Render, règle `FRONTEND_URL` sur l’origine Netlify exacte, par exemple `https://monespace.netlify.app` (sans chemin ni slash final). `DATABASE_URL` et `JWT_SECRET` sont définis par le blueprint.
-3. Crée le site Netlify depuis le même dépôt. `netlify.toml` définit le dossier `MonEspace`, la commande de build, la publication de `dist` et le fallback SPA.
-4. Dans Netlify, ajoute `VITE_API_URL` avec l’URL HTTPS du service API Render (`https://<service-api>.onrender.com`) et `VITE_TINYMCE_API_KEY` avec ta clé Tiny Cloud restreinte au domaine Netlify, puis déclenche un nouveau déploiement.
-5. Après la création de la base Render, exécute les commandes des migrations 001 à 004 de la section Base de données avec son `DATABASE_URL` (depuis un terminal local avec `psql` ou un shell disposant de `psql`). Ne relance pas ces migrations sur une base déjà initialisée.
-6. Vérifie l’inscription, la connexion, la création des trois widgets, le déplacement/redimensionnement, le rechargement et `/calendar` en HTTPS.
-
-Le site n’est pas encore déployé depuis cet environnement, faute d’accès aux comptes Netlify/Render. URL à compléter après création Netlify : `https://<nom-du-site>.netlify.app`.
+Évolutions envisagées
+Nouveaux widgets (liste de tâches Kanban, météo, notes vocales, citation du jour).
+Partage d'un tableau entre plusieurs membres d'une même organisation.
+Notifications pour les échéances du planning et la fin d'un timer.
+Synchronisation avec des agendas externes (Google Calendar, Outlook).
