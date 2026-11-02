@@ -17,6 +17,7 @@ function PostItWidget({
 }) {
   const saveTimeout = useRef(null);
   const onChangeRef = useRef(onChange);
+  const tinyMceApiKey = import.meta.env.VITE_TINYMCE_API_KEY;
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -48,8 +49,13 @@ function PostItWidget({
       onDelete={onDelete ? () => onDelete(id) : undefined}
     >
       <div className="postit-editor">
+        {!tinyMceApiKey && (
+          <p className="postit-editor__config-warning" role="status">
+            Configure VITE_TINYMCE_API_KEY dans .env.local pour activer l’édition.
+          </p>
+        )}
         <Editor
-          apiKey={import.meta.env.VITE_TINYMCE_API_KEY || "no-api-key"}
+          apiKey={tinyMceApiKey || "no-api-key"}
           initialValue={content}
           onEditorChange={handleEditorChange}
           onBlur={flushSave}

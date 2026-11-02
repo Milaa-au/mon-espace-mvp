@@ -5,6 +5,16 @@
   flex-direction: column;
 }
 
+.postit-editor__config-warning {
+  margin: 0 0 8px;
+  color: #92400e;
+  font-size: 0.8rem;
+}
+
+.dashboard-shell--dark .postit-editor__config-warning {
+  color: #fde68a;
+}
+
 .postit-editor__toolbar {
   display: flex;
   height: 100%;
