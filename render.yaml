@@ -1,0 +1,30 @@
+databases:
+  - name: monespace-db
+    databaseName: monespace
+    user: monespace
+    plan: free
+    region: frankfurt
+
+services:
+  - type: web
+    name: monespace-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: MonEspace/backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: monespace-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
