@@ -93,7 +93,7 @@ test("launcher creates planning and timer widgets and theme mode is selectable",
     await page.getByRole("menuitem", { name: "Timer" }).click();
     await expect(page.locator(".widget-container--timer")).toHaveCount(1);
 
-    await page.getByRole("button", { name: "Sombre" }).click();
+    await page.getByRole("button", { name: "Mode sombre" }).click();
     await expect(page.locator(".dashboard-shell")).toHaveClass(/dashboard-shell--dark/);
     expect(widgets.map((widget) => widget.type)).toEqual(["planning", "timer"]);
 });
@@ -156,4 +156,149 @@ test("drag and resize persist widget layout", async ({ page }) => {
     await page.mouse.move(resizeBox.x + resizeBox.width / 2 + 60, resizeBox.y + resizeBox.height / 2 + 40, { steps: 6 });
     await page.mouse.up();
     await expect.poll(() => patches.some((patch) => patch.width > 320 && patch.height > 240)).toBe(true);
+});
+
+test("calendar creates a planning widget and supports event CRUD", async ({ page }) => {
+    await page.clock.install({ time: new Date("2026-11-02T10:00:00") });
+    await page.addInitScript(() => localStorage.setItem("token", "calendar-e2e-token"));
+    await page.route("**/api/auth/me", (route) =>
+        route.fulfill({ status: 200, json: { userId: 7 } })
+    );
+    await page.route("**/api/boards", (route) =>
+        route.fulfill({
+            status: 200,
+            json: { board: { board_id: 3, name: "Espace test" }, widgets: [] },
+        })
+    );
+
+    let planningWidgetCreated = false;
+    let createdEvent;
+    let updatedEvent;
+    let deletedEventId;
+    await page.route("**/api/widgets", async (route) => {
+        const body = route.request().postDataJSON();
+        planningWidgetCreated = body.type === "planning";
+        await route.fulfill({
+            status: 201,
+            json: {
+                widget: {
+                    widget_id: 9,
+                    type: "planning",
+                    pos_x: 24,
+                    pos_y: 24,
+                    width: 380,
+                    height: 420,
+                    data: [],
+                },
+            },
+        });
+    });
+    await page.route("**/api/widgets/9/events", async (route) => {
+        if (route.request().method() === "POST") {
+            createdEvent = { eventId: 81, ...route.request().postDataJSON() };
+            await route.fulfill({ status: 201, json: { event: createdEvent } });
+            return;
+        }
+        await route.continue();
+    });
+    await page.route("**/api/widgets/9/events/81", async (route) => {
+        if (route.request().method() === "PATCH") {
+            updatedEvent = { eventId: 81, ...route.request().postDataJSON() };
+            await route.fulfill({ status: 200, json: { event: updatedEvent } });
+            return;
+        }
+        if (route.request().method() === "DELETE") {
+            deletedEventId = 81;
+            await route.fulfill({ status: 200, json: { message: "Événement supprimé." } });
+            return;
+        }
+        await route.continue();
+    });
+
+    await page.goto("/calendar");
+    await expect(page.getByRole("heading", { name: "Calendrier" })).toBeVisible();
+    await expect(page.locator(".fc-today-button")).toBeVisible();
+    await page.locator('.fc-daygrid-day[data-date="2026-11-15"]').click({
+        position: { x: 30, y: 30 },
+    });
+    expect(planningWidgetCreated).toBe(true);
+
+    await page.getByLabel("Titre").fill("Rendez-vous");
+    await page.getByRole("button", { name: "Ajouter l’événement" }).click();
+    await expect(page.locator(".fc-event")).toContainText("Rendez-vous");
+    expect(createdEvent.title).toBe("Rendez-vous");
+
+    await page.locator(".fc-event").click();
+    await page.getByRole("button", { name: "Modifier" }).click();
+    await page.getByLabel("Titre").fill("Rendez-vous modifié");
+    await page.getByRole("button", { name: "Enregistrer les modifications" }).click();
+    await expect(
+        page.locator(".fc-event").filter({ hasText: "Rendez-vous modifié" })
+    ).toBeVisible();
+    expect(updatedEvent.title).toBe("Rendez-vous modifié");
+
+    await page.locator(".fc-event").click();
+    await page.getByRole("button", { name: "Supprimer" }).click();
+    await expect(
+        page.locator(".fc-event").filter({ hasText: "Rendez-vous modifié" })
+    ).toHaveCount(0);
+    expect(deletedEventId).toBe(81);
+});
+
+test("dashboard opens the calendar and creates an event on a selected date", async ({ page }) => {
+    const planningWidget = {
+        widget_id: 9,
+        type: "planning",
+        pos_x: 24,
+        pos_y: 24,
+        width: 380,
+        height: 420,
+        data: [{
+            eventId: 31,
+            title: "Réunion",
+            startDate: "2026-11-06T09:00:00.000Z",
+            endDate: null,
+            description: "Point hebdomadaire",
+        }],
+    };
+    let createdEvent;
+    await page.addInitScript(() => localStorage.setItem("token", "calendar-e2e-token"));
+    await page.route("**/api/auth/me", (route) =>
+        route.fulfill({ status: 200, json: { userId: 7 } })
+    );
+    await page.route("**/api/boards", (route) =>
+        route.fulfill({
+            status: 200,
+            json: {
+                board: { board_id: 3, name: "Espace test" },
+                widgets: [planningWidget],
+            },
+        })
+    );
+    await page.route("**/api/widgets/9/events", async (route) => {
+        if (route.request().method() === "POST") {
+            const body = route.request().postDataJSON();
+            createdEvent = { eventId: 32, ...body };
+            planningWidget.data.push(createdEvent);
+            await route.fulfill({ status: 201, json: { event: createdEvent } });
+            return;
+        }
+
+        await route.fulfill({ status: 200, json: { events: planningWidget.data } });
+    });
+    await page.goto("/dashboard");
+    await page.getByRole("link", { name: "Calendrier" }).click();
+    await page.getByRole("heading", { name: "Calendrier" }).waitFor();
+    await expect(page.locator(".fc-event")).toContainText("Réunion");
+
+    await page.locator('.fc-daygrid-day[data-date="2026-11-15"]').click({
+        position: { x: 40, y: 30 },
+    });
+    await page.getByLabel("Titre").fill("Événement depuis le calendrier");
+    await page.getByRole("button", { name: "Ajouter l’événement" }).click();
+
+    await expect(
+        page.locator(".fc-event").filter({ hasText: "Événement depuis le calendrier" })
+    ).toBeVisible();
+    expect(createdEvent.title).toBe("Événement depuis le calendrier");
 });
