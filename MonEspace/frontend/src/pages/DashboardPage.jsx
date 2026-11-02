@@ -7,7 +7,8 @@ import {
     useSensor,
     useSensors,
 } from "@dnd-kit/core";
-import { useNavigate } from "react-router-dom";
+import { CalendarDays, Moon, StickyNote, Sun, Timer as TimerIcon } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { API_URL } from "../api.js";
 import PlanningWidget from "../components/PlanningWidget";
 import TimerWidget from "../components/TimerWidget";
@@ -387,12 +388,15 @@ function DashboardPage() {
                     </div>
                 </div>
 
-                <button
-                    className="logout-button"
-                    onClick={handleLogout}
-                >
-                    Déconnexion
-                </button>
+                <nav className="dashboard-header__actions" aria-label="Navigation du tableau">
+                    <Link className="calendar-link" to="/calendar">
+                        <CalendarDays size={18} aria-hidden="true" />
+                        Calendrier
+                    </Link>
+                    <button className="logout-button" onClick={handleLogout}>
+                        Déconnexion
+                    </button>
+                </nav>
             </header>
 
             <section className="dashboard-widgets">
@@ -471,29 +475,57 @@ function DashboardPage() {
                     <button
                         type="button"
                         aria-pressed={theme === "light"}
+                        aria-label="Mode clair"
+                        title="Mode clair"
                         onClick={() => setTheme("light")}
                     >
-                        Clair
+                        <Sun size={18} aria-hidden="true" />
                     </button>
                     <button
                         type="button"
                         aria-pressed={theme === "dark"}
+                        aria-label="Mode sombre"
+                        title="Mode sombre"
                         onClick={() => setTheme("dark")}
                     >
-                        Sombre
+                        <Moon size={18} aria-hidden="true" />
                     </button>
                 </div>
 
                 {showWidgetMenu && (
                     <div className="widget-launcher-menu" role="menu" aria-label="Ajouter un widget">
-                        <button role="menuitem" type="button" onClick={addPostIt} disabled={!board}>
-                            Post-it
+                        <button
+                            className="widget-launcher-icon"
+                            role="menuitem"
+                            type="button"
+                            aria-label="Ajouter un Post-it"
+                            title="Ajouter un Post-it"
+                            onClick={addPostIt}
+                            disabled={!board}
+                        >
+                            <StickyNote size={22} aria-hidden="true" />
                         </button>
-                        <button role="menuitem" type="button" onClick={addPlanningWidget} disabled={!board}>
-                            Planning
+                        <button
+                            className="widget-launcher-icon"
+                            role="menuitem"
+                            type="button"
+                            aria-label="Ajouter un planning"
+                            title="Ajouter un planning"
+                            onClick={addPlanningWidget}
+                            disabled={!board}
+                        >
+                            <CalendarDays size={22} aria-hidden="true" />
                         </button>
-                        <button role="menuitem" type="button" onClick={addTimer} disabled={!board}>
-                            Timer
+                        <button
+                            className="widget-launcher-icon"
+                            role="menuitem"
+                            type="button"
+                            aria-label="Ajouter un timer"
+                            title="Ajouter un timer"
+                            onClick={addTimer}
+                            disabled={!board}
+                        >
+                            <TimerIcon size={22} aria-hidden="true" />
                         </button>
                     </div>
                 )}
