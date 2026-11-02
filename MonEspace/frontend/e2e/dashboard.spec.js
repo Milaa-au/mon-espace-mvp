@@ -99,26 +99,33 @@ test("launcher creates planning and timer widgets and theme mode is selectable",
 });
 
 test("Post-it formatting persists after reload", async ({ page }) => {
+    test.skip(
+        !process.env.VITE_TINYMCE_API_KEY,
+        "Set VITE_TINYMCE_API_KEY to run the TinyMCE Cloud editing test."
+    );
+
     const { widgets, patches } = await mockDashboard(page);
     await page.goto("/dashboard");
     await page.getByRole("button", { name: "+ Ajouter un widget" }).click();
     await page.getByRole("menuitem", { name: "Post-it" }).click();
-
-    const editor = page.locator(".tiptap[contenteditable='true']");
+    const editor = page.frameLocator("iframe.tox-edit-area__iframe").locator("body#tinymce");
     await editor.waitFor();
     await editor.fill("Note formatée");
     await editor.press("Control+A");
-    await page.getByRole("button", { name: "Gras" }).click();
-    await page.getByLabel("Taille du texte").selectOption("24px");
-    await page.getByLabel("Police").selectOption("Georgia");
+    await page.locator('button[title="Bold"]').click();
+    await page.locator('button[title="Font size"]').click();
+    await page.getByRole("menuitem", { name: "24px" }).click();
+    await page.locator('button[title="Font family"]').click();
+    await page.getByRole("menuitem", { name: "Georgia" }).click();
 
     await expect.poll(() => patches.some((patch) => patch.content?.includes("Note formatée"))).toBe(true);
     const widget = widgets.find((item) => item.type === "postit");
     expect(widget.data.content).toContain("<strong>");
 
     await page.reload();
-    await expect(page.locator(".tiptap[contenteditable='true']")).toContainText("Note formatée");
-    await expect(page.locator(".tiptap strong")).toHaveCount(1);
+    const restoredEditor = page.frameLocator("iframe.tox-edit-area__iframe").locator("body#tinymce");
+    await expect(restoredEditor).toContainText("Note formatée");
+    await expect(restoredEditor.locator("strong")).toHaveCount(1);
 });
 
 test("drag and resize persist widget layout", async ({ page }) => {
