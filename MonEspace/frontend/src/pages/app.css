@@ -196,6 +196,30 @@ input {
   margin: 0;
 }
 
+.dashboard-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.calendar-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: var(--dashboard-fg);
+  background: var(--dashboard-surface);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.calendar-link:hover {
+  border-color: #146b64;
+}
+
 .logout-button {
   border: 1px solid #dbe2ea;
   border-radius: 10px;
@@ -386,6 +410,20 @@ input {
   text-align: left;
 }
 
+.widget-launcher-menu .widget-launcher-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  padding: 0;
+  text-align: center;
+}
+
+.widget-launcher-menu .widget-launcher-icon:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+
 .widget-launcher-menu button:hover {
   background: rgb(20 107 100 / 12%);
 }
@@ -393,6 +431,161 @@ input {
 .dashboard-controls button:focus-visible {
   outline: 2px solid #14b8a6;
   outline-offset: 2px;
+}
+
+.calendar-shell {
+  min-height: 100vh;
+  padding-bottom: 48px;
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.calendar-header h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.calendar-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--dashboard-fg);
+  background: var(--dashboard-surface);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  gap: 28px;
+  margin-top: 24px;
+}
+
+.calendar-main {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 8px;
+  background: var(--dashboard-surface);
+}
+
+.calendar-detail {
+  min-width: 0;
+  border-left: 1px solid var(--dashboard-border);
+  padding-left: 24px;
+  overflow-wrap: anywhere;
+}
+
+.calendar-event-form {
+  display: grid;
+  gap: 14px;
+}
+
+.calendar-event-form h2,
+.calendar-detail h2 {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+}
+
+.calendar-event-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--dashboard-fg);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.calendar-event-form input,
+.calendar-event-form select,
+.calendar-event-form textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 6px;
+  padding: 9px 10px;
+  color: var(--dashboard-fg);
+  background: var(--dashboard-surface);
+  font: inherit;
+}
+
+.calendar-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.calendar-form-actions button {
+  border: 1px solid var(--dashboard-border);
+  border-radius: 6px;
+  padding: 9px 11px;
+  color: var(--dashboard-fg);
+  background: var(--dashboard-surface);
+  cursor: pointer;
+  font: inherit;
+}
+
+.calendar-form-actions button[type="submit"] {
+  border-color: #146b64;
+  color: #fff;
+  background: #146b64;
+}
+
+.calendar-empty-note {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.dashboard-shell--dark .calendar-main {
+  border-color: var(--dashboard-border);
+  color: var(--dashboard-fg);
+}
+
+.dashboard-shell--dark .fc {
+  --fc-border-color: var(--dashboard-border);
+  --fc-page-bg-color: var(--dashboard-surface);
+  --fc-neutral-bg-color: #171d22;
+  --fc-list-event-hover-bg-color: #171d22;
+  --fc-today-bg-color: rgb(20 107 100 / 20%);
+  color: var(--dashboard-fg);
+}
+
+.dashboard-shell--dark .fc .fc-button-primary {
+  border-color: #146b64;
+  background: #146b64;
+}
+
+.dashboard-shell--dark .fc a {
+  color: #a7f3d0;
+}
+
+@media (max-width: 760px) {
+  .calendar-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .calendar-detail {
+    border-top: 1px solid var(--dashboard-border);
+    border-left: 0;
+    padding: 18px 0 0;
+  }
+
+  .calendar-header {
+    align-items: flex-start;
+  }
 }
 @media (max-width: 520px) {
   .app-shell {
