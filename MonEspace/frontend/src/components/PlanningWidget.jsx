@@ -30,7 +30,6 @@ function PlanningWidget({
     width,
     height,
     title = "Mon planning",
-    position = { x: 24, y: 24 },
     events = EMPTY_EVENTS,
     onAddEvent,
     onUpdateEvent,
