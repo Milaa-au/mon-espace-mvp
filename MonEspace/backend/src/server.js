@@ -28,6 +28,8 @@ app.get("/api/message", (req, res) => {
     });
 });
 
-app.listen(5000, () => {
-    console.log("Serveur lancé sur http://localhost:5000");
+const port = Number(process.env.PORT || 5000);
+
+app.listen(port, () => {
+    console.log(`Serveur lancé sur http://localhost:${port}`);
 });

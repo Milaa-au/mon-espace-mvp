@@ -2,8 +2,8 @@
 .postit-widget__textarea {
   display: block;
   width: 100%;
-  min-height: 120px;
-  resize: vertical;
+  min-height: 100%;
+  resize: none;
   border: none;
   outline: none;
   background: transparent;

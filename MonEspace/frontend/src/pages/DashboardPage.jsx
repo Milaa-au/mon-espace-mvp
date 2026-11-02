@@ -1,10 +1,18 @@
 
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
+import {
+    DndContext,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from "@dnd-kit/core";
 import { useNavigate } from "react-router-dom";
 import { API_URL } from "../api.js";
 import PlanningWidget from "../components/PlanningWidget";
-import PostItWidget from "../components/PostItWidget";
 import TimerWidget from "../components/TimerWidget";
+
+const PostItWidget = lazy(() => import("../components/PostItWidget"));
 
 function DashboardPage() {
     const navigate = useNavigate();
@@ -16,6 +24,10 @@ function DashboardPage() {
     const [showWidgetMenu, setShowWidgetMenu] = useState(false);
     const [theme, setTheme] = useState(
         () => localStorage.getItem("dashboard-theme") || "light"
+    );
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+        useSensor(KeyboardSensor)
     );
 
     useEffect(() => {
@@ -38,6 +50,19 @@ function DashboardPage() {
                 }
 
                 setBoard(data.board);
+                setPostIts(
+                    data.widgets
+                        .filter((widget) => widget.type === "postit")
+                        .map((widget) => ({
+                            id: widget.widget_id,
+                            title: "Mon Post-it",
+                            content: widget.data?.content ?? "",
+                            posX: widget.pos_x,
+                            posY: widget.pos_y,
+                            width: widget.width,
+                            height: widget.height,
+                        }))
+                );
                 setPlanningWidgets(
                     data.widgets
                         .filter((widget) => widget.type === "planning")
@@ -47,6 +72,8 @@ function DashboardPage() {
                             events: Array.isArray(widget.data) ? widget.data : [],
                             posX: widget.pos_x,
                             posY: widget.pos_y,
+                            width: widget.width,
+                            height: widget.height,
                         }))
                 );
                 setTimers(
@@ -57,6 +84,8 @@ function DashboardPage() {
                             timer: widget.data,
                             posX: widget.pos_x,
                             posY: widget.pos_y,
+                            width: widget.width,
+                            height: widget.height,
                         }))
                 );
             })
@@ -66,16 +95,6 @@ function DashboardPage() {
     const handleLogout = () => {
         localStorage.removeItem("token");
         navigate("/login", { replace: true });
-    };
-
-    const addPostIt = () => {
-        const newPostIt = {
-            id: crypto.randomUUID(),
-            title: "Mon Post-it",
-            content: "",
-        };
-
-        setPostIts((current) => [...current, newPostIt]);
     };
 
     const authenticatedRequest = async (path, options = {}) => {
@@ -97,19 +116,76 @@ function DashboardPage() {
         return data;
     };
 
+    const getNextPosition = () => {
+        const index = postIts.length + planningWidgets.length + timers.length;
+        return {
+            posX: 24 + (index % 3) * 340,
+            posY: 24 + Math.floor(index / 3) * 280,
+        };
+    };
+
+    const addPostIt = async () => {
+        if (!board) return;
+
+        const position = getNextPosition();
+        try {
+            const { widget } = await authenticatedRequest("/api/widgets", {
+                method: "POST",
+                body: JSON.stringify({
+                    boardId: board.board_id,
+                    type: "postit",
+                    ...position,
+                    width: 320,
+                    height: 240,
+                }),
+            });
+            setPostIts((current) => [
+                ...current,
+                {
+                    id: widget.widget_id,
+                    title: "Mon Post-it",
+                    content: widget.data?.content ?? "",
+                    posX: widget.pos_x,
+                    posY: widget.pos_y,
+                    width: widget.width,
+                    height: widget.height,
+                },
+            ]);
+            setError("");
+            setShowWidgetMenu(false);
+        } catch (requestError) {
+            setError(requestError.message);
+        }
+    };
+
     const addPlanningWidget = async () => {
         if (!board) return;
 
         try {
             const { widget } = await authenticatedRequest("/api/widgets", {
                 method: "POST",
-                body: JSON.stringify({ boardId: board.board_id, type: "planning" }),
+                body: JSON.stringify({
+                    boardId: board.board_id,
+                    type: "planning",
+                    ...getNextPosition(),
+                    width: 380,
+                    height: 420,
+                }),
             });
             setPlanningWidgets((current) => [
                 ...current,
-                { id: widget.widget_id, title: "Mon planning", events: [] },
+                {
+                    id: widget.widget_id,
+                    title: "Mon planning",
+                    events: [],
+                    posX: widget.pos_x,
+                    posY: widget.pos_y,
+                    width: widget.width,
+                    height: widget.height,
+                },
             ]);
             setError("");
+            setShowWidgetMenu(false);
         } catch (requestError) {
             setError(requestError.message);
         }
@@ -119,15 +195,14 @@ function DashboardPage() {
         if (!board) return;
 
         try {
-            const column = timers.length % 3;
-            const row = Math.floor(timers.length / 3);
             const { widget } = await authenticatedRequest("/api/widgets", {
                 method: "POST",
                 body: JSON.stringify({
                     boardId: board.board_id,
                     type: "timer",
-                    posX: 24 + column * 304,
-                    posY: 24 + row * 224,
+                    ...getNextPosition(),
+                    width: 320,
+                    height: 280,
                     data: { durationSeconds: 1500 },
                 }),
             });
@@ -138,9 +213,12 @@ function DashboardPage() {
                     timer: widget.data,
                     posX: widget.pos_x,
                     posY: widget.pos_y,
+                    width: widget.width,
+                    height: widget.height,
                 },
             ]);
             setError("");
+            setShowWidgetMenu(false);
         } catch (requestError) {
             setError(requestError.message);
         }
@@ -204,6 +282,54 @@ function DashboardPage() {
         }
     };
 
+    const updateWidget = async (widgetId, changes) => {
+        const collections = [
+            [postIts, setPostIts],
+            [planningWidgets, setPlanningWidgets],
+            [timers, setTimers],
+        ];
+        const collection = collections.find(([items]) =>
+            items.some((item) => item.id === widgetId)
+        );
+        if (!collection) return;
+
+        const [items, setItems] = collection;
+        const previous = items.find((item) => item.id === widgetId);
+        setItems((current) => current.map((item) =>
+            item.id === widgetId ? { ...item, ...changes } : item
+        ));
+
+        try {
+            await authenticatedRequest(`/api/widgets/${widgetId}`, {
+                method: "PATCH",
+                body: JSON.stringify(changes),
+            });
+            setError("");
+        } catch (requestError) {
+            setItems((current) => current.map((item) =>
+                item.id === widgetId ? { ...item, ...previous } : item
+            ));
+            setError(requestError.message);
+        }
+    };
+
+    const saveWidgetPosition = ({ active, delta }) => {
+        const widget = [...postIts, ...planningWidgets, ...timers]
+            .find((item) => item.id === active.id);
+        if (!widget) return;
+
+        updateWidget(active.id, {
+            posX: Math.max(0, Math.round((widget.posX ?? 24) + delta.x)),
+            posY: Math.max(0, Math.round((widget.posY ?? 24) + delta.y)),
+        });
+    };
+
+    const saveWidgetSize = (widgetId, size) =>
+        updateWidget(widgetId, {
+            width: Math.round(size.width),
+            height: Math.round(size.height),
+        });
+
     const addPlanningEvent = async (widgetId, event) => {
         const result = await authenticatedRequest(
             `/api/widgets/${widgetId}/events`,
@@ -239,18 +365,15 @@ function DashboardPage() {
         }
     };
 
-    const updatePostIt = (id, content) => {
-        setPostIts((current) =>
-            current.map((postIt) =>
-                postIt.id === id ? { ...postIt, content } : postIt
-            )
-        );
-    };
+    const updatePostIt = (id, content) => updateWidget(id, { content });
 
-    const deletePostIt = (id) => {
-        setPostIts((current) =>
-            current.filter((postIt) => postIt.id !== id)
-        );
+    const deletePostIt = async (id) => {
+        try {
+            await authenticatedRequest(`/api/widgets/${id}`, { method: "DELETE" });
+            setPostIts((current) => current.filter((postIt) => postIt.id !== id));
+        } catch (requestError) {
+            setError(requestError.message);
+        }
     };
 
     return (
@@ -277,58 +400,70 @@ function DashboardPage() {
                     <h2>Espace de travail</h2>
                 </div>
 
-                <div className="postit-grid">
-                    {postIts.map((postIt) => (
-                        <PostItWidget
-                            key={postIt.id}
-                            id={postIt.id}
-                            title={postIt.title}
-                            content={postIt.content}
-                            onChange={(newContent) => updatePostIt(postIt.id, newContent)}
-                            onDelete={deletePostIt}
-                        />
-                    ))}
-                </div>
+                {error && <p className="error-message" role="alert">{error}</p>}
 
-                <div className="planning-widget-list">
-                    {planningWidgets.map((planningWidget) => (
-                        <PlanningWidget
-                            key={planningWidget.id}
-                            id={planningWidget.id}
-                            title={planningWidget.title}
-                            events={planningWidget.events}
-                            onAddEvent={(event) => addPlanningEvent(planningWidget.id, event)}
-                            onUpdateEvent={(event) => updatePlanningEvent(planningWidget.id, event)}
-                            onDeleteEvent={(eventId) => deletePlanningEvent(planningWidget.id, eventId)}
-                            onEventsChange={(events) =>
-                                setPlanningWidgets((current) =>
-                                    current.map((widget) =>
+                <DndContext sensors={sensors} onDragEnd={saveWidgetPosition}>
+                    <div className="widget-canvas">
+                        <Suspense fallback={null}>
+                            {postIts.map((postIt) => (
+                                <PostItWidget
+                                    key={postIt.id}
+                                    id={postIt.id}
+                                    position={{ x: postIt.posX, y: postIt.posY }}
+                                    width={postIt.width}
+                                    height={postIt.height}
+                                    title={postIt.title}
+                                    content={postIt.content}
+                                    onChange={(newContent) => updatePostIt(postIt.id, newContent)}
+                                    onResize={saveWidgetSize}
+                                    onDelete={deletePostIt}
+                                />
+                            ))}
+                        </Suspense>
+
+                        {planningWidgets.map((planningWidget) => (
+                            <PlanningWidget
+                                key={planningWidget.id}
+                                id={planningWidget.id}
+                                position={{ x: planningWidget.posX, y: planningWidget.posY }}
+                                width={planningWidget.width}
+                                height={planningWidget.height}
+                                title={planningWidget.title}
+                                events={planningWidget.events}
+                                onAddEvent={(event) => addPlanningEvent(planningWidget.id, event)}
+                                onUpdateEvent={(event) => updatePlanningEvent(planningWidget.id, event)}
+                                onDeleteEvent={(eventId) => deletePlanningEvent(planningWidget.id, eventId)}
+                                onEventsChange={(events) =>
+                                    setPlanningWidgets((current) => current.map((widget) =>
                                         widget.id === planningWidget.id
                                             ? { ...widget, events }
                                             : widget
-                                    )
-                                )
-                            }
-                            onDelete={deletePlanningWidget}
-                        />
-                    ))}
-                </div>
-                <div className="timer-widget-list">
-                    {timers.map((item) => (
-                        <TimerWidget
-                            key={item.id}
-                            id={item.id}
-                            timer={item.timer}
-                            position={{ x: item.posX, y: item.posY }}
-                            onSetDuration={setTimerDuration}
-                            onStart={startTimer}
-                            onPause={pauseTimer}
-                            onReset={resetTimer}
-                            onRefresh={() => refreshTimer(item.id)}
-                            onDelete={deleteTimer}
-                        />
-                    ))}
-                </div>
+                                    ))
+                                }
+                                onResize={saveWidgetSize}
+                                onDelete={deletePlanningWidget}
+                            />
+                        ))}
+
+                        {timers.map((item) => (
+                            <TimerWidget
+                                key={item.id}
+                                id={item.id}
+                                timer={item.timer}
+                                position={{ x: item.posX, y: item.posY }}
+                                width={item.width}
+                                height={item.height}
+                                onSetDuration={setTimerDuration}
+                                onStart={startTimer}
+                                onPause={pauseTimer}
+                                onReset={resetTimer}
+                                onRefresh={() => refreshTimer(item.id)}
+                                onResize={saveWidgetSize}
+                                onDelete={deleteTimer}
+                            />
+                        ))}
+                    </div>
+                </DndContext>
             </section>
 
             <aside className="dashboard-controls" aria-label="Contrôles du tableau">
@@ -351,13 +486,13 @@ function DashboardPage() {
 
                 {showWidgetMenu && (
                     <div className="widget-launcher-menu" role="menu" aria-label="Ajouter un widget">
-                        <button role="menuitem" type="button" onClick={addPostIt}>
+                        <button role="menuitem" type="button" onClick={addPostIt} disabled={!board}>
                             Post-it
                         </button>
-                        <button role="menuitem" type="button" onClick={addPlanningWidget}>
+                        <button role="menuitem" type="button" onClick={addPlanningWidget} disabled={!board}>
                             Planning
                         </button>
-                        <button role="menuitem" type="button" onClick={addTimer}>
+                        <button role="menuitem" type="button" onClick={addTimer} disabled={!board}>
                             Timer
                         </button>
                     </div>

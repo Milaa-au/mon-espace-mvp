@@ -14,11 +14,14 @@ function TimerWidget({
     id,
     timer,
     position = { x: 24, y: 24 },
+    width,
+    height,
     onSetDuration,
     onStart,
     onPause,
     onReset,
     onRefresh,
+    onResize,
     onDelete,
 }) {
     const [timerState, setTimerState] = useState(timer);
@@ -104,12 +107,10 @@ function TimerWidget({
             id={id}
             title={timerState.label || "Timer"}
             type="timer"
-            style={{
-                position: "absolute",
-                left: position.x,
-                top: position.y,
-                width: 280,
-            }}
+            position={position}
+            width={width}
+            height={height}
+            onResize={onResize}
             onDelete={onDelete ? () => onDelete(id) : undefined}
         >
             <div className="timer-widget">

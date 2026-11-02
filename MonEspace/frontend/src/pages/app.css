@@ -166,6 +166,7 @@ input {
   min-height: 100vh;
   padding: 32px clamp(20px, 6vw, 88px) 120px;
   color: var(--dashboard-fg);
+  overflow-x: auto;
   background:
     radial-gradient(circle at 5% 4%, #dbeafe 0, transparent 26%),
     var(--dashboard-bg);
@@ -248,24 +249,12 @@ input {
   opacity: 0.6;
 }
 
-.postit-grid {
+.widget-canvas {
   position: relative;
-  min-height: 560px;
+  min-height: calc(100vh - 230px);
+  min-width: 100%;
   margin-top: 16px;
-}
-
-.planning-widget-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
-  align-items: start;
-  gap: 20px;
-  margin-top: 24px;
-}
-
-.timer-widget-list {
-  position: relative;
-  min-height: 400px;
-  margin-top: 24px;
+  overflow: visible;
 }
 
 .dashboard-shell--dark .widgets-header {
@@ -276,6 +265,53 @@ input {
   border-color: var(--dashboard-border);
   background-color: var(--dashboard-surface);
   color: var(--dashboard-fg);
+}
+
+.dashboard-shell--dark .dashboard-header,
+.dashboard-shell--dark .widgets-header,
+.dashboard-shell--dark .widget-container__header {
+  border-color: var(--dashboard-border);
+}
+
+.dashboard-shell--dark .widget-container__title,
+.dashboard-shell--dark .planning-widget__form label,
+.dashboard-shell--dark .planning-widget__events,
+.dashboard-shell--dark .timer-widget__status {
+  color: var(--dashboard-fg);
+}
+
+.dashboard-shell--dark .planning-widget__form input,
+.dashboard-shell--dark .planning-widget__form textarea,
+.dashboard-shell--dark .timer-widget__duration input {
+  border-color: var(--dashboard-border);
+  background: #171d22;
+  color: var(--dashboard-fg);
+}
+
+.dashboard-shell--dark .planning-widget__form-actions button,
+.dashboard-shell--dark .planning-widget__event-actions button,
+.dashboard-shell--dark .timer-widget__duration button,
+.dashboard-shell--dark .timer-widget__actions button,
+.dashboard-shell--dark .logout-button {
+  border-color: var(--dashboard-border);
+  background: var(--dashboard-surface);
+  color: var(--dashboard-fg);
+}
+
+.dashboard-shell--dark .postit-editor__toolbar {
+  border-color: var(--dashboard-border);
+}
+
+.dashboard-shell--dark .postit-editor__toolbar button,
+.dashboard-shell--dark .postit-editor__toolbar select,
+.dashboard-shell--dark .postit-editor__body {
+  border-color: var(--dashboard-border);
+  background: #171d22;
+  color: var(--dashboard-fg);
+}
+
+.dashboard-shell--dark .timer-widget__display {
+  color: #86efac;
 }
 
 .dashboard-controls {
