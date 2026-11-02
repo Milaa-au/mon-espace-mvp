@@ -1,30 +1,40 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
+import { Editor } from "@tinymce/tinymce-react";
 import WidgetContainer from "./WidgetContainer";
 import "./PostItWidget.css";
 
 function PostItWidget({
   id,
   position,
+  width,
+  height,
   title = "Mon Post-it",
   content = "",
   onChange,
+  onResize,
   onDelete,
 }) {
-  const [text, setText] = useState(content);
+  const saveTimeout = useRef(null);
+  const onChangeRef = useRef(onChange);
+  const tinyMceApiKey = import.meta.env.VITE_TINYMCE_API_KEY;
 
   useEffect(() => {
-    setText(content);
-  }, [content]);
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
-  function handleChange(event) {
-    const newContent = event.target.value;
+  useEffect(() => () => clearTimeout(saveTimeout.current), []);
 
-    setText(newContent);
+  function handleEditorChange(html) {
+    clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(() => {
+      onChangeRef.current?.(html);
+    }, 500);
+  }
 
-    if (onChange) {
-      onChange(id, newContent);
-    }
+  function flushSave(_event, editor) {
+    clearTimeout(saveTimeout.current);
+    onChangeRef.current?.(editor.getContent());
   }
 
   return (
@@ -32,21 +42,38 @@ function PostItWidget({
       title={title}
       type="postit"
       id={id}
-      style={{
-        position: "absolute",
-        left: position.x,
-        top: position.y,
-        width: 280,
-      }}
+      position={position}
+      width={width}
+      height={height}
+      onResize={onResize}
       onDelete={onDelete ? () => onDelete(id) : undefined}
     >
-      <textarea
-        className="postit-widget__textarea"
-        value={text}
-        onChange={handleChange}
-        placeholder="Écris ta note ici..."
-        aria-label="Contenu du Post-it"
-      />
+      <div className="postit-editor">
+        {!tinyMceApiKey && (
+          <p className="postit-editor__config-warning" role="status">
+            Configure VITE_TINYMCE_API_KEY dans .env.local pour activer l’édition.
+          </p>
+        )}
+        <Editor
+          apiKey={tinyMceApiKey || "no-api-key"}
+          initialValue={content}
+          onEditorChange={handleEditorChange}
+          onBlur={flushSave}
+          init={{
+            height: "100%",
+            menubar: false,
+            statusbar: false,
+            resize: false,
+            placeholder: "Écris ta note ici...",
+            plugins: "lists link",
+            toolbar: "undo redo | bold italic | fontfamily fontsize | bullist numlist | removeformat",
+            toolbar_mode: "sliding",
+            font_family_formats: "DM Sans=dm sans,sans-serif; Georgia=georgia,serif; Arial=arial,sans-serif; Monospace=monospace",
+            font_size_formats: "14px 16px 20px 24px 30px",
+            content_style: "body { font-family: 'DM Sans', sans-serif; font-size: 16px; color: #422006; background: transparent; }",
+          }}
+        />
+      </div>
     </WidgetContainer>
   );
 }

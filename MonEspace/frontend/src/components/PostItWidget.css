@@ -1,25 +1,33 @@
 
-.postit-widget__textarea {
-  display: block;
-  width: 100%;
-  min-height: 120px;
-  resize: vertical;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: #422006;
-  font: inherit;
-  line-height: 1.6;
-  box-sizing: border-box;
+.postit-editor {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
 }
 
-.postit-widget__textarea::placeholder {
-  color: #a16207;
-  opacity: 0.8;
+.postit-editor__config-warning {
+  margin: 0 0 8px;
+  color: #92400e;
+  font-size: 0.8rem;
 }
 
-.postit-widget__textarea:focus-visible {
-  outline: 2px solid #ca8a04;
-  outline-offset: 4px;
-  border-radius: 4px;
+.dashboard-shell--dark .postit-editor__config-warning {
+  color: #fde68a;
 }
+
+.postit-editor__toolbar {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+.postit-editor .tox-tinymce {
+  flex: 1;
+  border: 1px solid rgb(120 53 15 / 25%);
+  border-radius: 6px;
+}
+
+.dashboard-shell--dark .postit-editor .tox-tinymce {
+  border-color: #3a454e;
+  background: rgb(255 255 255 / 55%);

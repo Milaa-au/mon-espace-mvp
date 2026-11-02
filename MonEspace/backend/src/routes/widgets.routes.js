@@ -16,6 +16,7 @@ const ALLOWED_PATCH_FIELDS = [
     "width",
     "height",
     "zIndex",
+    "content",
 ];
 
 // POST /api/widgets
@@ -67,6 +68,28 @@ router.post("/", authMiddleware, async (req, res) => {
         if (!data || typeof data !== "object" || Array.isArray(data)) {
             return res.status(400).json({
                 message: "data doit être un objet JSON.",
+            });
+        }
+
+        if (
+            type === "postit" &&
+            data.content !== undefined &&
+            (typeof data.content !== "string" || data.content.length > 100000)
+        ) {
+            return res.status(400).json({
+                message: "Le contenu du Post-it doit être du texte de 100000 caractères maximum.",
+            });
+        }
+
+        if (
+            type === "timer" &&
+            data.durationSeconds !== undefined &&
+            (!Number.isSafeInteger(data.durationSeconds) ||
+                data.durationSeconds < 1 ||
+                data.durationSeconds > 604800)
+        ) {
+            return res.status(400).json({
+                message: "La durée du timer doit être comprise entre 1 seconde et 7 jours.",
             });
         }
 
@@ -150,7 +173,13 @@ router.patch("/:id", authMiddleware, async (req, res) => {
         }
 
         for (const [field, value] of Object.entries(fields)) {
-            if (!Number.isSafeInteger(value)) {
+            if (field === "content") {
+                if (typeof value !== "string" || value.length > 100000) {
+                    return res.status(400).json({
+                        message: "Le contenu du Post-it doit être du texte de 100000 caractères maximum.",
+                    });
+                }
+            } else if (!Number.isSafeInteger(value)) {
                 return res.status(400).json({
                     message: `${field} doit être un entier.`,
                 });
@@ -167,7 +196,7 @@ router.patch("/:id", authMiddleware, async (req, res) => {
         }
 
         const ownershipResult = await pool.query(
-            `SELECT w.widget_id
+            `SELECT w.widget_id, w.type
              FROM widgets w
              JOIN boards b ON b.board_id = w.board_id
              WHERE w.widget_id = $1
@@ -178,6 +207,12 @@ router.patch("/:id", authMiddleware, async (req, res) => {
         if (ownershipResult.rowCount === 0) {
             return res.status(404).json({
                 message: "Widget introuvable.",
+            });
+        }
+
+        if (fields.content !== undefined && ownershipResult.rows[0].type !== "postit") {
+            return res.status(400).json({
+                message: "Seul le contenu d'un Post-it peut être modifié ici.",
             });
         }
 

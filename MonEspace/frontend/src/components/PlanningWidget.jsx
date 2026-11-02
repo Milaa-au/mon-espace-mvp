@@ -26,6 +26,9 @@ function formatDate(value) {
 
 function PlanningWidget({
     id,
+    position,
+    width,
+    height,
     title = "Mon planning",
     position = { x: 24, y: 24 },
     events = EMPTY_EVENTS,
@@ -33,6 +36,7 @@ function PlanningWidget({
     onUpdateEvent,
     onDeleteEvent,
     onEventsChange,
+    onResize,
     onDelete,
 }) {
     const [eventList, setEventList] = useState(events);
@@ -144,12 +148,10 @@ function PlanningWidget({
             title={title}
             type="planning"
             id={id}
-            style={{
-                position: "absolute",
-                left: position.x,
-                top: position.y,
-                width: 320,
-            }}
+            position={position}
+            width={width}
+            height={height}
+            onResize={onResize}
             onDelete={onDelete ? () => onDelete(id) : undefined}
         >
             <form className="planning-widget__form" onSubmit={handleSubmit}>

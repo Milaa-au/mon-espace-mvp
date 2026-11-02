@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useState } from "react";
+import { lazy, StrictMode, Suspense, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Link, Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import Login from "./Login.jsx";
@@ -6,6 +6,8 @@ import Register from "./Register.jsx";
 import DashboardPage from "./DashboardPage.jsx";
 import { API_URL } from "../api.js";
 import "./app.css";
+
+const CalendarPage = lazy(() => import("./CalendarPage.jsx"));
 
 function AuthLayout() {
   const location = useLocation();
@@ -76,6 +78,14 @@ function App() {
         </Route>
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route
+            path="/calendar"
+            element={(
+              <Suspense fallback={<main className="app-shell">Chargement du calendrier...</main>}>
+                <CalendarPage />
+              </Suspense>
+            )}
+          />
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

@@ -35,11 +35,13 @@ async function createWidget({
             );
         } else if (type === "timer") {
             await client.query(
-                `INSERT INTO timer (widget_id, label, duration_seconds)
-                 VALUES ($1, $2, $3)`,
+                `INSERT INTO timer
+                    (widget_id, label, duration_seconds, remaining_seconds)
+                 VALUES ($1, $2, $3, $4)`,
                 [
                     widgetId,
                     data.label ?? "Timer",
+                    data.durationSeconds ?? 1500,
                     data.durationSeconds ?? 1500,
                 ]
             );
@@ -73,6 +75,7 @@ async function getWidgetById(widgetId, db = pool) {
                     SELECT json_build_object(
                         'label', t.label,
                         'durationSeconds', t.duration_seconds,
+                        'remainingSeconds', t.remaining_seconds,
                         'status', t.status,
                         'startedAt', t.started_at
                     )
@@ -123,6 +126,7 @@ async function getWidgetsByBoardId(boardId, db = pool) {
                     SELECT json_build_object(
                         'label', t.label,
                         'durationSeconds', t.duration_seconds,
+                        'remainingSeconds', t.remaining_seconds,
                         'status', t.status,
                         'startedAt', t.started_at
                     )
@@ -168,6 +172,7 @@ async function updateWidget(widgetId, fields) {
 
     const updates = [];
     const values = [];
+    const hasContent = fields.content !== undefined;
 
     for (const [key, column] of Object.entries(allowedFields)) {
         if (fields[key] !== undefined) {
@@ -176,25 +181,54 @@ async function updateWidget(widgetId, fields) {
         }
     }
 
-    if (updates.length === 0) {
+    if (updates.length === 0 && !hasContent) {
         return null;
     }
 
-    values.push(widgetId);
+    const client = await pool.connect();
 
-    const result = await pool.query(
-        `UPDATE widgets
-         SET ${updates.join(", ")}
-         WHERE widget_id = $${values.length}
-         RETURNING widget_id`,
-        values
-    );
+    try {
+        await client.query("BEGIN");
 
-    if (result.rowCount === 0) {
-        return null;
+        if (updates.length > 0) {
+            values.push(widgetId);
+            const result = await client.query(
+                `UPDATE widgets
+                 SET ${updates.join(", ")}
+                 WHERE widget_id = $${values.length}
+                 RETURNING widget_id`,
+                values
+            );
+
+            if (result.rowCount === 0) {
+                await client.query("ROLLBACK");
+                return null;
+            }
+        }
+
+        if (hasContent) {
+            const result = await client.query(
+                `UPDATE postit
+                 SET content = $1
+                 WHERE widget_id = $2
+                 RETURNING widget_id`,
+                [fields.content, widgetId]
+            );
+
+            if (result.rowCount === 0) {
+                await client.query("ROLLBACK");
+                return null;
+            }
+        }
+
+        await client.query("COMMIT");
+        return await getWidgetById(widgetId);
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
     }
-
-    return getWidgetById(widgetId);
 }
 
 // Supprimer un widget.
