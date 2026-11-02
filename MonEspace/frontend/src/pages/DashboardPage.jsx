@@ -7,13 +7,38 @@ import {
     useSensor,
     useSensors,
 } from "@dnd-kit/core";
-import { CalendarDays, Moon, StickyNote, Sun, Timer as TimerIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { API_URL } from "../api.js";
 import PlanningWidget from "../components/PlanningWidget";
 import TimerWidget from "../components/TimerWidget";
 
 const PostItWidget = lazy(() => import("../components/PostItWidget"));
+
+function InlineIcon({ name, size = 20, ...props }) {
+    const shapes = {
+        calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" /></>,
+        note: <><path d="M5 3h14a2 2 0 0 1 2 2v14l-5 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" /><path d="M16 21v-5h5M7 8h10M7 12h8" /></>,
+        timer: <><circle cx="12" cy="13" r="8" /><path d="M12 9v4l3 2M9 2h6M12 5V2" /></>,
+        sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" /></>,
+        moon: <path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5 8.5 8.5 0 1 0 20.5 14.5Z" />,
+    };
+
+    return (
+        <svg
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            {...props}
+        >
+            {shapes[name]}
+        </svg>
+    );
+}
 
 function DashboardPage() {
     const navigate = useNavigate();
@@ -390,7 +415,7 @@ function DashboardPage() {
 
                 <nav className="dashboard-header__actions" aria-label="Navigation du tableau">
                     <Link className="calendar-link" to="/calendar">
-                        <CalendarDays size={18} aria-hidden="true" />
+                        <InlineIcon name="calendar" size={18} aria-hidden="true" />
                         Calendrier
                     </Link>
                     <button className="logout-button" onClick={handleLogout}>
@@ -479,7 +504,7 @@ function DashboardPage() {
                         title="Mode clair"
                         onClick={() => setTheme("light")}
                     >
-                        <Sun size={18} aria-hidden="true" />
+                        <InlineIcon name="sun" size={18} aria-hidden="true" />
                     </button>
                     <button
                         type="button"
@@ -488,7 +513,7 @@ function DashboardPage() {
                         title="Mode sombre"
                         onClick={() => setTheme("dark")}
                     >
-                        <Moon size={18} aria-hidden="true" />
+                        <InlineIcon name="moon" size={18} aria-hidden="true" />
                     </button>
                 </div>
 
@@ -503,7 +528,7 @@ function DashboardPage() {
                             onClick={addPostIt}
                             disabled={!board}
                         >
-                            <StickyNote size={22} aria-hidden="true" />
+                            <InlineIcon name="note" size={22} aria-hidden="true" />
                         </button>
                         <button
                             className="widget-launcher-icon"
@@ -514,7 +539,7 @@ function DashboardPage() {
                             onClick={addPlanningWidget}
                             disabled={!board}
                         >
-                            <CalendarDays size={22} aria-hidden="true" />
+                            <InlineIcon name="calendar" size={22} aria-hidden="true" />
                         </button>
                         <button
                             className="widget-launcher-icon"
@@ -525,7 +550,7 @@ function DashboardPage() {
                             onClick={addTimer}
                             disabled={!board}
                         >
-                            <TimerIcon size={22} aria-hidden="true" />
+                            <InlineIcon name="timer" size={22} aria-hidden="true" />
                         </button>
                     </div>
                 )}
