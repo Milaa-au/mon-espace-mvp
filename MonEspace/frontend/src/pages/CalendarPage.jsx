@@ -1,11 +1,27 @@
 import { useEffect, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import interactionPlugin from "@fullcalendar/interaction";
-import frLocale from "@fullcalendar/core/locales/fr";
-import { ArrowLeft, CalendarDays } from "lucide-react";
+import dayGridPlugin from "@fullcalendar/react/daygrid";
+import interactionPlugin from "@fullcalendar/react/interaction";
+import frLocale from "@fullcalendar/react/locales/fr";
 import { Link } from "react-router-dom";
 import { API_URL } from "../api.js";
+
+function CalendarIcon({ size = 26 }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="16" rx="2" />
+            <path d="M16 3v4M8 3v4M3 10h18" />
+        </svg>
+    );
+}
+
+function ArrowLeftIcon() {
+    return (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="m12 19-7-7 7-7M5 12h14" />
+        </svg>
+    );
+}
 
 function toLocalDateTime(value) {
     const date = new Date(value);
@@ -17,6 +33,7 @@ function toLocalDateTime(value) {
 
 function CalendarPage() {
     const [theme] = useState(() => localStorage.getItem("dashboard-theme") || "light");
+    const [board, setBoard] = useState(null);
     const [planningWidgets, setPlanningWidgets] = useState([]);
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [draft, setDraft] = useState(null);
@@ -37,6 +54,7 @@ function CalendarPage() {
                     throw new Error(data.message || "Chargement du calendrier impossible.");
                 }
 
+                setBoard(data.board);
                 setPlanningWidgets(
                     data.widgets
                         .filter((widget) => widget.type === "planning")
@@ -83,10 +101,38 @@ function CalendarPage() {
         }))
     );
 
-    function startNewEvent(dateInfo) {
+    async function startNewEvent(dateInfo) {
+        setError("");
+        let targetWidget = planningWidgets[0];
+
         if (planningWidgets.length === 0) {
-            setError("Ajoute d’abord un widget Planning depuis le tableau de bord.");
-            return;
+            if (!board) {
+                setError("Le tableau de bord n’est pas encore chargé.");
+                return;
+            }
+
+            try {
+                const { widget } = await authenticatedRequest("/api/widgets", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        boardId: board.board_id,
+                        type: "planning",
+                        posX: 24,
+                        posY: 24,
+                        width: 380,
+                        height: 420,
+                    }),
+                });
+                targetWidget = {
+                    id: widget.widget_id,
+                    title: "Mon planning",
+                    events: [],
+                };
+                setPlanningWidgets([targetWidget]);
+            } catch (requestError) {
+                setError(requestError.message);
+                return;
+            }
         }
 
         setSelectedEvent(null);
@@ -94,7 +140,7 @@ function CalendarPage() {
         setDescription("");
         setEndDate("");
         setDraft({
-            widgetId: String(planningWidgets[0].id),
+            widgetId: String(targetWidget.id),
             startDate: toLocalDateTime(dateInfo.dateStr.includes("T")
                 ? dateInfo.dateStr
                 : `${dateInfo.dateStr}T09:00:00`),
@@ -109,9 +155,50 @@ function CalendarPage() {
             end: info.event.end,
             description: info.event.extendedProps.description,
             widgetTitle: info.event.extendedProps.widgetTitle,
+            widgetId: info.event.extendedProps.widgetId,
+            eventId: info.event.extendedProps.eventId,
         });
         setDraft(null);
         setError("");
+    }
+
+    function startEditingEvent() {
+        if (!selectedEvent) return;
+
+        setDraft({
+            widgetId: String(selectedEvent.widgetId),
+            eventId: selectedEvent.eventId,
+            startDate: toLocalDateTime(selectedEvent.start),
+        });
+        setTitle(selectedEvent.title);
+        setEndDate(selectedEvent.end ? toLocalDateTime(selectedEvent.end) : "");
+        setDescription(selectedEvent.description ?? "");
+        setSelectedEvent(null);
+    }
+
+    async function deleteSelectedEvent() {
+        if (!selectedEvent) return;
+
+        try {
+            await authenticatedRequest(
+                `/api/widgets/${selectedEvent.widgetId}/events/${selectedEvent.eventId}`,
+                { method: "DELETE" }
+            );
+            setPlanningWidgets((current) => current.map((widget) =>
+                String(widget.id) === String(selectedEvent.widgetId)
+                    ? {
+                        ...widget,
+                        events: widget.events.filter((item) =>
+                            String(item.eventId) !== String(selectedEvent.eventId)
+                        ),
+                    }
+                    : widget
+            ));
+            setSelectedEvent(null);
+            setError("");
+        } catch (requestError) {
+            setError(requestError.message);
+        }
     }
 
     async function handleSubmit(event) {
@@ -119,19 +206,38 @@ function CalendarPage() {
         if (!draft) return;
 
         try {
+            const start = new Date(draft.startDate);
+            const end = endDate ? new Date(endDate) : null;
+            if (end && end < start) {
+                setError("La date de fin doit être après la date de début.");
+                return;
+            }
+
             const eventData = {
                 title: title.trim(),
-                startDate: new Date(draft.startDate).toISOString(),
-                endDate: endDate ? new Date(endDate).toISOString() : null,
+                startDate: start.toISOString(),
+                endDate: end ? end.toISOString() : null,
                 description: description.trim(),
             };
             const result = await authenticatedRequest(
-                `/api/widgets/${draft.widgetId}/events`,
-                { method: "POST", body: JSON.stringify(eventData) }
+                `/api/widgets/${draft.widgetId}/events${draft.eventId ? `/${draft.eventId}` : ""}`,
+                {
+                    method: draft.eventId ? "PATCH" : "POST",
+                    body: JSON.stringify(eventData),
+                }
             );
             setPlanningWidgets((current) => current.map((widget) =>
                 String(widget.id) === String(draft.widgetId)
-                    ? { ...widget, events: [...widget.events, result.event] }
+                    ? {
+                        ...widget,
+                        events: draft.eventId
+                            ? widget.events.map((item) =>
+                                String(item.eventId) === String(draft.eventId)
+                                    ? result.event
+                                    : item
+                            )
+                            : [...widget.events, result.event],
+                    }
                     : widget
             ));
             setDraft(null);
@@ -146,10 +252,10 @@ function CalendarPage() {
             <header className="calendar-header">
                 <div>
                     <p className="eyebrow">MonEspace</p>
-                    <h1><CalendarDays size={26} aria-hidden="true" /> Calendrier</h1>
+                    <h1><CalendarIcon /> Calendrier</h1>
                 </div>
                 <Link className="calendar-back-link" to="/dashboard">
-                    <ArrowLeft size={17} aria-hidden="true" />
+                    <ArrowLeftIcon />
                     Retour au tableau
                 </Link>
             </header>
@@ -187,7 +293,7 @@ function CalendarPage() {
                     <aside className="calendar-detail" aria-live="polite">
                         {draft ? (
                             <form className="calendar-event-form" onSubmit={handleSubmit}>
-                                <h2>Nouvel événement</h2>
+                                <h2>{draft.eventId ? "Modifier l’événement" : "Nouvel événement"}</h2>
                                 <label>
                                     Planning
                                     <select
@@ -240,6 +346,10 @@ function CalendarPage() {
                                 {selectedEvent.start && <p>{selectedEvent.start.toLocaleString("fr-FR")}</p>}
                                 {selectedEvent.end && <p>Fin : {selectedEvent.end.toLocaleString("fr-FR")}</p>}
                                 {selectedEvent.description && <p>{selectedEvent.description}</p>}
+                                <div className="calendar-form-actions">
+                                    <button type="button" onClick={startEditingEvent}>Modifier</button>
+                                    <button type="button" onClick={deleteSelectedEvent}>Supprimer</button>
+                                </div>
                             </section>
                         ) : (
                             <p>Clique sur une date pour ajouter un événement, ou sur un événement pour voir ses détails.</p>
