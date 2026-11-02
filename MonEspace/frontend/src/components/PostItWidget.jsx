@@ -1,9 +1,6 @@
 
 import { useEffect, useRef } from "react";
-import { EditorContent, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import { FontFamily, FontSize, TextStyle } from "@tiptap/extension-text-style";
-import Placeholder from "@tiptap/extension-placeholder";
+import { Editor } from "@tinymce/tinymce-react";
 import WidgetContainer from "./WidgetContainer";
 import "./PostItWidget.css";
 
@@ -25,36 +22,18 @@ function PostItWidget({
     onChangeRef.current = onChange;
   }, [onChange]);
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      TextStyle,
-      FontFamily,
-      FontSize,
-      Placeholder.configure({ placeholder: "Écris ta note ici..." }),
-    ],
-    content: content || "<p></p>",
-    onUpdate: ({ editor: currentEditor }) => {
-      clearTimeout(saveTimeout.current);
-      saveTimeout.current = setTimeout(() => {
-        onChangeRef.current?.(currentEditor.getHTML());
-      }, 500);
-    },
-  });
-
-  useEffect(() => {
-    if (editor?.isInitialized && editor.getHTML() !== (content || "<p></p>")) {
-      editor.commands.setContent(content || "<p></p>", { emitUpdate: false });
-    }
-  }, [content, editor]);
-
   useEffect(() => () => clearTimeout(saveTimeout.current), []);
 
-  function flushSave() {
-    if (!editor?.isInitialized) return;
-
+  function handleEditorChange(html) {
     clearTimeout(saveTimeout.current);
-    onChangeRef.current?.(editor.getHTML());
+    saveTimeout.current = setTimeout(() => {
+      onChangeRef.current?.(html);
+    }, 500);
+  }
+
+  function flushSave(_event, editor) {
+    clearTimeout(saveTimeout.current);
+    onChangeRef.current?.(editor.getContent());
   }
 
   return (
@@ -69,63 +48,25 @@ function PostItWidget({
       onDelete={onDelete ? () => onDelete(id) : undefined}
     >
       <div className="postit-editor">
-        <div className="postit-editor__toolbar" role="toolbar" aria-label="Mise en forme du Post-it">
-          <button
-            type="button"
-            aria-label="Gras"
-            aria-pressed={editor?.isActive("bold") ?? false}
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => editor?.chain().focus().toggleBold().run()}
-          >
-            B
-          </button>
-          <button
-            type="button"
-            aria-label="Italique"
-            aria-pressed={editor?.isActive("italic") ?? false}
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => editor?.chain().focus().toggleItalic().run()}
-          >
-            <i>I</i>
-          </button>
-          <label>
-            <span className="sr-only">Police</span>
-            <select
-              aria-label="Police"
-              defaultValue=""
-              onChange={(event) => {
-                if (event.target.value) {
-                  editor?.chain().focus().setFontFamily(event.target.value).run();
-                }
-              }}
-            >
-              <option value="" disabled>Police</option>
-              <option value="DM Sans">DM Sans</option>
-              <option value="Georgia">Georgia</option>
-              <option value="Arial">Arial</option>
-              <option value="monospace">Monospace</option>
-            </select>
-          </label>
-          <label>
-            <span className="sr-only">Taille du texte</span>
-            <select
-              aria-label="Taille du texte"
-              defaultValue="16px"
-              onChange={(event) =>
-                editor?.chain().focus().setFontSize(event.target.value).run()
-              }
-            >
-              <option value="14px">14</option>
-              <option value="16px">16</option>
-              <option value="20px">20</option>
-              <option value="24px">24</option>
-              <option value="30px">30</option>
-            </select>
-          </label>
-        </div>
-        <div className="postit-editor__body" onBlur={flushSave}>
-          <EditorContent editor={editor} aria-label="Contenu du Post-it" />
-        </div>
+        <Editor
+          apiKey={import.meta.env.VITE_TINYMCE_API_KEY || "no-api-key"}
+          initialValue={content}
+          onEditorChange={handleEditorChange}
+          onBlur={flushSave}
+          init={{
+            height: "100%",
+            menubar: false,
+            statusbar: false,
+            resize: false,
+            placeholder: "Écris ta note ici...",
+            plugins: "lists link",
+            toolbar: "undo redo | bold italic | fontfamily fontsize | bullist numlist | removeformat",
+            toolbar_mode: "sliding",
+            font_family_formats: "DM Sans=dm sans,sans-serif; Georgia=georgia,serif; Arial=arial,sans-serif; Monospace=monospace",
+            font_size_formats: "14px 16px 20px 24px 30px",
+            content_style: "body { font-family: 'DM Sans', sans-serif; font-size: 16px; color: #422006; background: transparent; }",
+          }}
+        />
       </div>
     </WidgetContainer>
   );

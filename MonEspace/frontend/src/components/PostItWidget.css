@@ -7,64 +7,17 @@
 
 .postit-editor__toolbar {
   display: flex;
+  height: 100%;
+  min-height: 0;
   flex-wrap: wrap;
   align-items: center;
   gap: 5px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgb(120 53 15 / 20%);
-}
-
-.postit-editor__toolbar button,
-.postit-editor__toolbar select {
-  min-height: 30px;
-  border: 1px solid rgb(120 53 15 / 25%);
-  border-radius: 5px;
-  padding: 4px 7px;
-  background: rgb(255 255 255 / 55%);
-  color: #422006;
-  cursor: pointer;
-  font: inherit;
-}
-
-.postit-editor__toolbar button[aria-pressed="true"] {
-  background: #422006;
-  color: #fff7ed;
-}
-
-.postit-editor__body {
-  min-height: 90px;
+.postit-editor .tox-tinymce {
   flex: 1;
-  padding-top: 8px;
-  color: #422006;
-  line-height: 1.55;
-  overflow-wrap: anywhere;
+  border: 1px solid rgb(120 53 15 / 25%);
+  border-radius: 6px;
 }
 
-.postit-editor__body .tiptap {
-  min-height: 80px;
-  outline: none;
-}
-
-.postit-editor__body .tiptap p {
-  margin: 0 0 8px;
-}
-
-.postit-editor__body .tiptap p.is-editor-empty:first-child::before {
-  color: #a16207;
-  content: attr(data-placeholder);
-  float: left;
-  height: 0;
-  pointer-events: none;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
+.dashboard-shell--dark .postit-editor .tox-tinymce {
+  border-color: #3a454e;
+  background: rgb(255 255 255 / 55%);
