@@ -13,6 +13,14 @@ function DashboardPage() {
     const [postIts, setPostIts] = useState([]);
     const [planningWidgets, setPlanningWidgets] = useState([]);
     const [timers, setTimers] = useState([]);
+    const [showWidgetMenu, setShowWidgetMenu] = useState(false);
+    const [theme, setTheme] = useState(
+        () => localStorage.getItem("dashboard-theme") || "light"
+    );
+
+    useEffect(() => {
+        localStorage.setItem("dashboard-theme", theme);
+    }, [theme]);
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -246,7 +254,7 @@ function DashboardPage() {
     };
 
     return (
-        <main className="dashboard-shell">
+        <main className={`dashboard-shell dashboard-shell--${theme}`}>
             <header className="dashboard-header">
                 <div className="brand">
                     <span className="brand-mark">M</span>
@@ -264,49 +272,9 @@ function DashboardPage() {
                 </button>
             </header>
 
-            <section className="board-content" aria-live="polite">
-                {board ? (
-                    <>
-                        <p className="eyebrow">Mon espace personnel</p>
-                        <h2>{board.name}</h2>
-                        <p>Ton tableau est prêt.</p>
-                    </>
-                ) : error ? (
-                    <p className="error-message">{error}</p>
-                ) : (
-                    <p>Chargement de ton tableau...</p>
-                )}
-            </section>
-
             <section className="dashboard-widgets">
                 <div className="widgets-header">
-                    <h2>Mes widgets</h2>
-
-                    <div className="widgets-header__actions">
-                        <button
-                            type="button"
-                            className="add-postit-button"
-                            onClick={addPostIt}
-                        >
-                            + Ajouter un Post-it
-                        </button>
-                        <button
-                            type="button"
-                            className="add-postit-button"
-                            onClick={addPlanningWidget}
-                            disabled={!board}
-                        >
-                            + Ajouter un planning
-                        </button>
-                        <button
-                            type="button"
-                            className="add-postit-button"
-                            onClick={addTimer}
-                            disabled={!board}
-                        >
-                            + Ajouter un timer
-                        </button>
-                    </div>
+                    <h2>Espace de travail</h2>
                 </div>
 
                 <div className="postit-grid">
@@ -362,6 +330,49 @@ function DashboardPage() {
                     ))}
                 </div>
             </section>
+
+            <aside className="dashboard-controls" aria-label="Contrôles du tableau">
+                <div className="dashboard-theme-controls" aria-label="Thème d’affichage">
+                    <button
+                        type="button"
+                        aria-pressed={theme === "light"}
+                        onClick={() => setTheme("light")}
+                    >
+                        Clair
+                    </button>
+                    <button
+                        type="button"
+                        aria-pressed={theme === "dark"}
+                        onClick={() => setTheme("dark")}
+                    >
+                        Sombre
+                    </button>
+                </div>
+
+                {showWidgetMenu && (
+                    <div className="widget-launcher-menu" role="menu" aria-label="Ajouter un widget">
+                        <button role="menuitem" type="button" onClick={addPostIt}>
+                            Post-it
+                        </button>
+                        <button role="menuitem" type="button" onClick={addPlanningWidget}>
+                            Planning
+                        </button>
+                        <button role="menuitem" type="button" onClick={addTimer}>
+                            Timer
+                        </button>
+                    </div>
+                )}
+
+                <button
+                    type="button"
+                    className="widget-launcher-toggle"
+                    aria-expanded={showWidgetMenu}
+                    aria-haspopup="menu"
+                    onClick={() => setShowWidgetMenu((open) => !open)}
+                >
+                    {showWidgetMenu ? "Fermer" : "+ Ajouter un widget"}
+                </button>
+            </aside>
         </main>
     );
 }
