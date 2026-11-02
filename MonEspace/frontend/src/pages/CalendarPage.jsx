@@ -335,7 +335,9 @@ function CalendarPage() {
                                     <textarea value={description} onChange={(change) => setDescription(change.target.value)} rows={3} />
                                 </label>
                                 <div className="calendar-form-actions">
-                                    <button type="submit">Ajouter l’événement</button>
+                                    <button type="submit">
+                                        {draft.eventId ? "Enregistrer les modifications" : "Ajouter l’événement"}
+                                    </button>
                                     <button type="button" onClick={() => setDraft(null)}>Annuler</button>
                                 </div>
                             </form>
