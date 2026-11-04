@@ -146,6 +146,74 @@ Les migrations se trouvent dans `MonEspace/backend/src/db/migrations/` (`001` à
 
 Toutes les routes, hors inscription et connexion, exigent un token JWT valide dans l'en-tête `Authorization: Bearer <token>`.
 
+### Méthodes HTTP
+
+| Méthode | Rôle | Exemple |
+|---|---|---|
+| `GET` | Lire, sans rien modifier | `GET /api/boards` charge le tableau |
+| `POST` | Créer une ressource ou déclencher une action | `POST /api/widgets` ajoute un widget |
+| `PATCH` | Modifier une partie d'une ressource | `PATCH /api/widgets/12` change position, taille ou contenu |
+| `DELETE` | Supprimer | `DELETE /api/widgets/12` retire un widget |
+
+### Ce que le client peut demander à l'API
+
+| Action du client | Requête | Ce que fait l'API |
+|---|---|---|
+| Créer un compte | `POST /api/auth/register` | Valide les champs, vérifie l'unicité de l'email et du pseudo, hache le mot de passe (bcrypt), crée l'utilisateur |
+| Se connecter | `POST /api/auth/login` | Vérifie le mot de passe et renvoie un JWT valable 1 h |
+| Vérifier sa session | `GET /api/auth/me` | Contrôle le token et renvoie l'identité de l'utilisateur |
+| Ouvrir son tableau | `GET /api/boards` | Crée le tableau s'il n'existe pas, renvoie les widgets de l'utilisateur |
+| Ajouter un widget | `POST /api/widgets` | Crée le widget et sa ligne associée (`postit`, `planning` ou `timer`) |
+| Déplacer, redimensionner, écrire dans un Post-it | `PATCH /api/widgets/:id` | Met à jour position, taille ou contenu |
+| Supprimer un widget | `DELETE /api/widgets/:id` | Supprime le widget et, en cascade, son contenu |
+| Gérer le planning | `GET`, `POST /api/widgets/:id/events`, `PATCH`, `DELETE .../:eventId` | Liste, ajoute, modifie, supprime des événements |
+| Utiliser le timer | `GET .../timer`, `PATCH .../duration`, `POST .../start`, `pause`, `reset` | Met à jour l'état du timer et renvoie l'état recalculé |
+
+### Déroulement d'une requête
+
+À chaque requête, l'API :
+
+1. contrôle l'origine (CORS) et lit le corps JSON ;
+2. authentifie l'utilisateur via le JWT (sauf `register` et `login`) ;
+3. valide les données reçues ;
+4. vérifie que la ressource appartient à l'utilisateur ;
+5. exécute une requête SQL paramétrée sur PostgreSQL ;
+6. répond en JSON avec le code adapté.
+
+```mermaid
+sequenceDiagram
+    participant C as Navigateur (React)
+    participant A as API Express
+    participant D as PostgreSQL
+
+    C->>A: POST /api/auth/login {identifier, password}
+    A->>D: SELECT utilisateur (email ou pseudo)
+    D-->>A: utilisateur + password_hash
+    A->>A: bcrypt.compare puis jwt.sign (1 h)
+    A-->>C: 200 {token, user}
+    C->>C: stocke le token (localStorage)
+
+    C->>A: GET /api/auth/me (en-tête Authorization avec le token)
+    A->>A: authMiddleware : jwt.verify
+    A-->>C: 200 {user}
+
+    C->>A: PATCH /api/widgets/12 {pos_x, pos_y} + token
+    A->>A: JWT valide, widget appartenant à l'utilisateur
+    A->>D: UPDATE widgets
+    A-->>C: 200 widget mis à jour
+```
+
+### Codes de réponse
+
+| Code | Signification |
+|---|---|
+| 200 / 201 | Succès / ressource créée |
+| 400 | Données invalides (champ manquant, mot de passe trop court) |
+| 401 | Non authentifié (token absent, invalide ou expiré) |
+| 404 | Ressource introuvable |
+| 409 | Conflit (email ou pseudo déjà utilisé) |
+| 500 | Erreur serveur |
+
 ## Structure du projet
 
 ```text
