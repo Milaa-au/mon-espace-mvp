@@ -5,16 +5,6 @@
   flex-direction: column;
 }
 
-.postit-editor__config-warning {
-  margin: 0 0 8px;
-  color: #92400e;
-  font-size: 0.8rem;
-}
-
-.dashboard-shell--dark .postit-editor__config-warning {
-  color: #fde68a;
-}
-
 .postit-editor__toolbar {
   display: flex;
   height: 100%;
@@ -22,6 +12,28 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 5px;
+}
+
+.postit-editor__body {
+  box-sizing: border-box;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  padding: 8px;
+  border: 1px solid rgb(120 53 15 / 25%);
+  border-radius: 6px;
+  background: transparent;
+  color: #422006;
+  font: inherit;
+  line-height: 1.5;
+  resize: none;
+}
+
+.postit-editor__body:focus-visible {
+  outline: 2px solid #92400e;
+  outline-offset: 1px;
+}
+
 .postit-editor .tox-tinymce {
   flex: 1;
   border: 1px solid rgb(120 53 15 / 25%);

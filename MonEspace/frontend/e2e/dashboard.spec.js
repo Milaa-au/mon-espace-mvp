@@ -98,34 +98,43 @@ test("launcher creates planning and timer widgets and theme mode is selectable",
     expect(widgets.map((widget) => widget.type)).toEqual(["planning", "timer"]);
 });
 
-test("Post-it formatting persists after reload", async ({ page }) => {
-    test.skip(
-        !process.env.VITE_TINYMCE_API_KEY,
-        "Set VITE_TINYMCE_API_KEY to run the TinyMCE Cloud editing test."
-    );
-
+test("Post-it content persists after reload", async ({ page }) => {
     const { widgets, patches } = await mockDashboard(page);
     await page.goto("/dashboard");
     await page.getByRole("button", { name: "+ Ajouter un widget" }).click();
     await page.getByRole("menuitem", { name: "Post-it" }).click();
-    const editor = page.frameLocator("iframe.tox-edit-area__iframe").locator("body#tinymce");
-    await editor.waitFor();
-    await editor.fill("Note formatée");
-    await editor.press("Control+A");
-    await page.locator('button[title="Bold"]').click();
-    await page.locator('button[title="Font size"]').click();
-    await page.getByRole("menuitem", { name: "24px" }).click();
-    await page.locator('button[title="Font family"]').click();
-    await page.getByRole("menuitem", { name: "Georgia" }).click();
+    const plainTextEditor = page.getByRole("textbox", { name: "Contenu du Post-it" });
+    const richTextEditor = page.frameLocator("iframe.tox-edit-area__iframe").locator("body#tinymce");
+    await expect.poll(async () =>
+        (await plainTextEditor.count()) > 0 || await richTextEditor.isVisible()
+    ).toBe(true);
+
+    const usesPlainTextEditor = (await plainTextEditor.count()) > 0;
+    if (usesPlainTextEditor) {
+        await plainTextEditor.fill("Note formatée");
+    } else {
+        await richTextEditor.fill("Note formatée");
+        await richTextEditor.press("Control+A");
+        await page.locator('button[title="Bold"]').click();
+        await page.locator('button[title="Font size"]').click();
+        await page.getByRole("menuitem", { name: "24px" }).click();
+        await page.locator('button[title="Font family"]').click();
+        await page.getByRole("menuitem", { name: "Georgia" }).click();
+    }
 
     await expect.poll(() => patches.some((patch) => patch.content?.includes("Note formatée"))).toBe(true);
     const widget = widgets.find((item) => item.type === "postit");
-    expect(widget.data.content).toContain("<strong>");
+    if (!usesPlainTextEditor) expect(widget.data.content).toContain("<strong>");
 
     await page.reload();
-    const restoredEditor = page.frameLocator("iframe.tox-edit-area__iframe").locator("body#tinymce");
-    await expect(restoredEditor).toContainText("Note formatée");
-    await expect(restoredEditor.locator("strong")).toHaveCount(1);
+    if (usesPlainTextEditor) {
+        await expect(page.getByRole("textbox", { name: "Contenu du Post-it" }))
+            .toHaveValue("Note formatée");
+    } else {
+        const restoredEditor = page.frameLocator("iframe.tox-edit-area__iframe").locator("body#tinymce");
+        await expect(restoredEditor).toContainText("Note formatée");
+        await expect(restoredEditor.locator("strong")).toHaveCount(1);
+    }
 });
 
 test("drag and resize persist widget layout", async ({ page }) => {
