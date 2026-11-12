@@ -153,7 +153,22 @@ function PlanningWidget({
             onResize={onResize}
             onDelete={onDelete ? () => onDelete(id) : undefined}
         >
+            <div className="planning-widget__intro">
+                <span className="planning-widget__intro-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="5" width="18" height="16" rx="2" />
+                        <path d="M16 3v4M8 3v4M3 10h18" />
+                    </svg>
+                </span>
+                <div>
+                    <p className="planning-widget__intro-title">Un peu d’organisation</p>
+                    <p className="planning-widget__intro-text">Gardez vos rendez-vous à portée de main.</p>
+                </div>
+            </div>
             <form className="planning-widget__form" onSubmit={handleSubmit}>
+                <p className="planning-widget__section-title">
+                    {editingEventId !== null ? "Modifier l’événement" : "Nouvel événement"}
+                </p>
                 <label>
                     Événement
                     <input
@@ -209,8 +224,14 @@ function PlanningWidget({
             {error && <p className="error-message" role="alert">{error}</p>}
 
             <section className="planning-widget__events" aria-label="Événements">
+                <div className="planning-widget__events-heading">
+                    <h3>Vos événements</h3>
+                    <span aria-label={`${eventList.length} événement${eventList.length === 1 ? "" : "s"}`}>
+                        {eventList.length}
+                    </span>
+                </div>
                 {eventList.length === 0 ? (
-                    <p>Aucun événement pour le moment.</p>
+                    <p className="planning-widget__empty">Aucun événement pour le moment.</p>
                 ) : (
                     <ul>
                         {eventList
@@ -223,7 +244,7 @@ function PlanningWidget({
                                     <li key={eventId}>
                                         <article>
                                             <h3>{planningEvent.title}</h3>
-                                            <p>
+                                            <p className="planning-widget__event-date">
                                                 <time dateTime={planningEvent.startDate}>
                                                     {formatDate(planningEvent.startDate)}
                                                 </time>
@@ -237,7 +258,7 @@ function PlanningWidget({
                                                 )}
                                             </p>
                                             {planningEvent.description && (
-                                                <p>{planningEvent.description}</p>
+                                                <p className="planning-widget__event-description">{planningEvent.description}</p>
                                             )}
                                             <div className="planning-widget__event-actions">
                                                 <button

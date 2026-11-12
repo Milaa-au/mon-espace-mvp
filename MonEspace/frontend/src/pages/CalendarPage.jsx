@@ -258,9 +258,10 @@ function CalendarPage() {
     return (
         <main className={`calendar-shell dashboard-shell--${theme}`}>
             <header className="calendar-header">
-                <div>
+                <div className="calendar-header__intro">
                     <p className="eyebrow">MonEspace</p>
                     <h1><CalendarIcon /> Calendrier</h1>
+                    <p className="calendar-header__description">Vos rendez-vous et vos projets, en un coup d’œil.</p>
                 </div>
                 <Link className="calendar-back-link" to="/dashboard">
                     <ArrowLeftIcon />
@@ -350,7 +351,8 @@ function CalendarPage() {
                                 </div>
                             </form>
                         ) : selectedEvent ? (
-                            <section>
+                            <section className="calendar-event-detail">
+                                <p className="calendar-detail__eyebrow">Détails de l’événement</p>
                                 <h2>{selectedEvent.title}</h2>
                                 <p>{selectedEvent.widgetTitle}</p>
                                 {selectedEvent.start && <p>{selectedEvent.start.toLocaleString("fr-FR")}</p>}
@@ -362,7 +364,11 @@ function CalendarPage() {
                                 </div>
                             </section>
                         ) : (
-                            <p>Clique sur une date pour ajouter un événement, ou sur un événement pour voir ses détails.</p>
+                            <div className="calendar-detail__empty">
+                                <span className="calendar-detail__icon"><CalendarIcon /></span>
+                                <h2>À votre rythme</h2>
+                                <p>Clique sur une date pour ajouter un événement, ou sur un événement pour voir ses détails.</p>
+                            </div>
                         )}
                     </aside>
                 </div>

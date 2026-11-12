@@ -106,6 +106,41 @@ test("launcher creates planning and timer widgets and theme mode is selectable",
     expect(widgets.map((widget) => widget.type)).toEqual(["planning", "timer"]);
 });
 
+test("planning remains usable in light and dark mode", async ({ page }) => {
+    const { widgets } = await mockDashboard(page);
+    widgets.push({
+        widget_id: 21, type: "planning", pos_x: 24, pos_y: 24,
+        width: 380, height: 420, data: [],
+    });
+    await page.route("**/api/widgets/21/events", async (route) => {
+        const event = { eventId: 31, ...route.request().postDataJSON() };
+        await route.fulfill({ status: 201, json: { event } });
+    });
+    await page.route("**/api/widgets/21/events/31", async (route) => {
+        if (route.request().method() === "PATCH") {
+            const event = { eventId: 31, ...route.request().postDataJSON() };
+            await route.fulfill({ status: 200, json: { event } });
+        } else {
+            await route.fulfill({ status: 200, json: { message: "Supprimé" } });
+        }
+    });
+    await page.goto("/dashboard");
+    const planning = page.locator(".widget-container--planning");
+    await planning.getByLabel("Événement", { exact: true }).fill("Rendez-vous");
+    await planning.getByRole("button", { name: "Ajouter l’événement" }).click();
+    await expect(planning.getByText("Rendez-vous", { exact: true })).toBeVisible();
+    await expect(planning.getByLabel("1 événement")).toBeVisible();
+    await page.getByRole("button", { name: "Mode sombre" }).click();
+    await expect(planning).toHaveCSS("background-color", "rgb(28, 40, 53)");
+    await planning.getByRole("button", { name: "Modifier" }).click();
+    await planning.getByLabel("Événement", { exact: true }).fill("Rendez-vous modifié");
+    await planning.getByRole("button", { name: "Enregistrer" }).click();
+    await expect(planning.getByText("Rendez-vous modifié", { exact: true })).toBeVisible();
+    await planning.getByRole("button", { name: "Supprimer", exact: true }).click();
+    await expect(planning.getByText("Aucun événement pour le moment.")).toBeVisible();
+    await expect(planning.getByLabel("0 événements")).toBeVisible();
+});
+
 test("Post-it color persists and matches the writing area in light and dark mode", async ({ page }) => {
     const { widgets, patches } = await mockDashboard(page);
     await page.goto("/dashboard");
@@ -340,6 +375,30 @@ test("calendar creates a planning widget and supports event CRUD", async ({ page
         page.locator(".fc-event").filter({ hasText: "Rendez-vous modifié" })
     ).toHaveCount(0);
     expect(deletedEventId).toBe(81);
+});
+
+test("calendar is usable on a narrow screen in dark mode", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.addInitScript(() => {
+        localStorage.setItem("token", "calendar-e2e-token");
+        localStorage.setItem("dashboard-theme", "dark");
+    });
+    await page.route("**/api/auth/me", (route) =>
+        route.fulfill({ status: 200, json: { userId: 7 } })
+    );
+    await page.route("**/api/boards", (route) =>
+        route.fulfill({ status: 200, json: { board: { board_id: 3 }, widgets: [] } })
+    );
+    await page.goto("/calendar");
+    await expect(page.getByRole("heading", { name: "Calendrier" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "À votre rythme" })).toBeVisible();
+    await expect(page.locator(".calendar-shell")).toHaveClass(/dashboard-shell--dark/);
+    await expect(page.locator(".fc-today-button")).toBeVisible();
+    const sizes = await page.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        content: document.documentElement.scrollWidth,
+    }));
+    expect(sizes.content).toBeLessThanOrEqual(sizes.viewport);
 });
 
 test("dashboard opens the calendar and creates an event on a selected date", async ({ page }) => {

@@ -443,7 +443,7 @@ function DashboardPage() {
         <main className={`dashboard-shell dashboard-shell--${theme}`}>
             <header className="dashboard-header">
                 <div className="brand">
-                    <span className="brand-mark">M</span>
+                    <span className="brand-mark" aria-hidden="true">M</span>
                     <div>
                         <p className="eyebrow">MonEspace</p>
                         <h1>Mon tableau de bord</h1>
@@ -463,7 +463,17 @@ function DashboardPage() {
 
             <section className="dashboard-widgets">
                 <div className="widgets-header">
-                    <h2>Espace de travail</h2>
+                    <div className="widgets-header__intro">
+                        <p className="widgets-header__eyebrow">Votre espace personnel</p>
+                        <h2>Espace de travail</h2>
+                        <p className="widgets-header__description">
+                            Organisez vos idées, vos événements et votre temps à votre façon.
+                        </p>
+                    </div>
+                    <div className="widgets-header__tip">
+                        <span className="widgets-header__tip-icon" aria-hidden="true">✦</span>
+                        <span>Déplacez et redimensionnez vos widgets librement</span>
+                    </div>
                 </div>
 
                 {error && <p className="error-message" role="alert">{error}</p>}

@@ -1,52 +1,112 @@
-.planning-widget__textarea {
-    display: block;
-    width: 100%;
-    min-height: 180px;
-    padding: 8px;
-    resize: vertical;
-    border: none;
-    outline: none;
-    background: transparent;
-    color: #1e3a8a;
-    font: inherit;
-    line-height: 1.6;
-    box-sizing: border-box;
+.widget-container--planning {
+    --planning-accent: #3564b5;
+    --planning-muted: #526785;
+    --planning-card: #fff;
+    --planning-border: #d7e4f6;
+    border-color: #cbddf3;
+    border-radius: 18px;
+    background: #f5f9ff;
+    box-shadow: 0 12px 28px rgb(42 80 135 / 14%);
 }
 
-.planning-widget__textarea::placeholder {
-    color: #64748b;
-    opacity: 0.8;
+.widget-container--planning .widget-container__header {
+    border-color: #d7e4f6;
+    background: #e7f0ff;
 }
 
-.planning-widget__textarea:focus-visible {
-    outline: 2px solid #60a5fa;
-    outline-offset: 2px;
-    border-radius: 4px;
+.widget-container--planning .widget-container__title {
+    color: #234879;
+}
+
+.widget-container--planning .widget-container__content {
+    padding: 14px;
+}
+
+.planning-widget__intro {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.planning-widget__intro-icon {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    place-items: center;
+    border-radius: 12px;
+    color: #fff;
+    background: linear-gradient(135deg, #568de1, #526ac1);
+}
+
+.planning-widget__intro-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.planning-widget__intro-title,
+.planning-widget__intro-text {
+    margin: 0;
+}
+
+.planning-widget__intro-title {
+    color: #234879;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.planning-widget__intro-text {
+    margin-top: 2px;
+    color: var(--planning-muted);
+    font-size: 0.76rem;
+    line-height: 1.4;
 }
 
 .planning-widget__form {
     display: grid;
-    gap: 12px;
+    gap: 11px;
+    padding: 14px;
+    border: 1px solid var(--planning-border);
+    border-radius: 14px;
+    background: var(--planning-card);
+}
+
+.planning-widget__section-title {
+    margin: 0 0 2px;
+    color: #234879;
+    font-size: 0.85rem;
+    font-weight: 700;
 }
 
 .planning-widget__form label {
     display: grid;
     gap: 5px;
-    color: #334155;
-    font-size: 0.875rem;
-    font-weight: 600;
+    color: #405675;
+    font-size: 0.78rem;
+    font-weight: 700;
 }
 
 .planning-widget__form input,
 .planning-widget__form textarea {
     width: 100%;
     min-width: 0;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    padding: 8px 10px;
+    border: 1px solid var(--planning-border);
+    border-radius: 9px;
+    padding: 9px 10px;
     color: #1e293b;
-    background: #fff;
+    background: #f8fbff;
     font: inherit;
+}
+
+.planning-widget__form textarea {
+    resize: vertical;
+}
+
+.planning-widget__form input:focus-visible,
+.planning-widget__form textarea:focus-visible {
+    outline: 2px solid #6b9ce7;
+    outline-offset: 1px;
 }
 
 .planning-widget__form-actions,
@@ -58,33 +118,129 @@
 
 .planning-widget__form-actions button,
 .planning-widget__event-actions button {
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    padding: 7px 10px;
-    color: #334155;
-    background: #fff;
+    border: 1px solid var(--planning-border);
+    border-radius: 9px;
+    padding: 8px 11px;
+    color: #35547f;
+    background: var(--planning-card);
     cursor: pointer;
     font: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.planning-widget__form-actions button[type="submit"] {
+    flex: 1;
+    border-color: var(--planning-accent);
+    color: #fff;
+    background: var(--planning-accent);
+}
+
+.planning-widget__events {
+    margin-top: 18px;
+}
+
+.planning-widget__events-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.planning-widget__events-heading h3 {
+    margin: 0;
+    color: #234879;
+    font-size: 0.85rem;
+}
+
+.planning-widget__events-heading span {
+    min-width: 25px;
+    padding: 3px 7px;
+    border-radius: 999px;
+    color: #3564b5;
+    background: #e1edff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.planning-widget__empty {
+    margin: 10px 0 4px;
+    padding: 14px;
+    border: 1px dashed var(--planning-border);
+    border-radius: 12px;
+    color: var(--planning-muted);
+    background: var(--planning-card);
+    font-size: 0.8rem;
+    text-align: center;
 }
 
 .planning-widget__events ul {
     display: grid;
-    gap: 12px;
+    gap: 10px;
+    margin: 10px 0;
     padding: 0;
     list-style: none;
 }
 
 .planning-widget__events li {
-    border-top: 1px solid rgb(30 58 138 / 16%);
-    padding-top: 12px;
+    padding: 12px;
+    border: 1px solid var(--planning-border);
+    border-left: 4px solid #6b9ce7;
+    border-radius: 12px;
+    background: var(--planning-card);
 }
 
-.planning-widget__events h3,
-.planning-widget__events p {
-    margin: 0 0 8px;
+.planning-widget__events article h3,
+.planning-widget__events article p {
+    margin: 0 0 7px;
     overflow-wrap: anywhere;
+}
+
+.planning-widget__events article h3 {
+    color: #234879;
+    font-size: 0.9rem;
+}
+
+.planning-widget__event-date,
+.planning-widget__event-description {
+    color: var(--planning-muted);
+    font-size: 0.8rem;
+    line-height: 1.5;
 }
 
 .planning-widget__event-actions {
     margin-top: 10px;
+}
+
+.dashboard-shell--dark .widget-container.widget-container--planning {
+    --planning-accent: #4a75bf;
+    --planning-muted: #b7c8df;
+    --planning-card: #202d3b;
+    --planning-border: #40546b;
+    border-color: #40546b;
+    background: #1c2835;
+}
+
+.dashboard-shell--dark .widget-container--planning .widget-container__header {
+    border-color: #40546b;
+    background: #27394d;
+}
+
+.dashboard-shell--dark .planning-widget__intro-title,
+.dashboard-shell--dark .planning-widget__section-title,
+.dashboard-shell--dark .planning-widget__events-heading h3,
+.dashboard-shell--dark .planning-widget__events article h3 {
+    color: #e4efff;
+}
+
+.dashboard-shell--dark .planning-widget__events-heading span {
+    color: #d6e8ff;
+    background: #344c6b;
+}
+
+.dashboard-shell--dark .planning-widget__form-actions button[type="submit"] {
+    border-color: #4a75bf;
+    color: #fff;
+    background: #4a75bf;
 }
