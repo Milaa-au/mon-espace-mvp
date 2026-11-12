@@ -37,6 +37,7 @@ function PostItWidget({
   onChange,
   onColorChange,
   onResize,
+  constrainResize,
   onDelete,
 }) {
   const saveTimeout = useRef(null);
@@ -102,6 +103,7 @@ function PostItWidget({
       height={height}
       style={{ "--postit-color": background }}
       onResize={onResize}
+      constrainResize={constrainResize}
       onDelete={onDelete ? () => onDelete(id) : undefined}
     >
       <div className="postit-editor">

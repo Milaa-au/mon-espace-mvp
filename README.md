@@ -28,6 +28,7 @@ Projet de fin de spécialisation — Holberton School (MVP, version 1.0).
   - **Planning** : liste d'événements datés, avec ajout, modification et suppression.
   - **Timer** : minuteur configurable (type Pomodoro) avec démarrer, pause et réinitialisation. Il reste exact après un rechargement de la page.
 - **Glisser-déposer et redimensionnement** : position et taille de chaque widget sont sauvegardées.
+- **Placement des widgets** : les nouveaux widgets évitent ceux déjà présents et le redimensionnement s'arrête avant de recouvrir un autre widget.
 - **Page Calendrier** : vue mensuelle regroupant les événements de tous les plannings.
 - **Lanceur de widgets** : menu d'icônes pour ajouter un Post-it, un planning ou un timer.
 - **Thème clair / sombre**, mémorisé d'une visite à l'autre.

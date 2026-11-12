@@ -281,6 +281,48 @@ test("drag and resize persist widget layout", async ({ page }) => {
     await expect.poll(() => patches.some((patch) => patch.width > 320 && patch.height > 240)).toBe(true);
 });
 
+for (const scenario of [
+    { type: "postit", title: "Mon Post-it", neighbor: { pos_x: 374, pos_y: 24 }, maxWidth: 350 },
+    { type: "planning", title: "Mon planning", neighbor: { pos_x: 24, pos_y: 294 }, maxHeight: 270 },
+    { type: "timer", title: "Timer", neighbor: { pos_x: 374, pos_y: 294 }, diagonal: true },
+]) {
+    test(`resizing ${scenario.type} does not overlap another widget`, async ({ page }) => {
+        const { widgets, patches } = await mockDashboard(page);
+        const timer = {
+            label: "Timer", durationSeconds: 1500, remainingSeconds: 1500,
+            status: "idle", startedAt: null,
+        };
+        widgets.push(
+            {
+                widget_id: 21, type: scenario.type, pos_x: 24, pos_y: 24, width: 320, height: 240,
+                data: scenario.type === "postit" ? { content: "", color: "yellow" }
+                    : scenario.type === "timer" ? timer : [],
+            },
+            { widget_id: 22, type: "postit", ...scenario.neighbor, width: 320, height: 240, data: { content: "", color: "yellow" } }
+        );
+        await page.goto("/dashboard");
+        const widget = page.locator(`.widget-container--${scenario.type}`).first();
+        const handle = widget.getByRole("button", { name: `Redimensionner ${scenario.title}` });
+        const box = await handle.boundingBox();
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(box.x + box.width / 2 + 150, box.y + box.height / 2 + 150, { steps: 6 });
+        const target = await widget.boundingBox();
+        const neighbor = await page.locator(".widget-container--postit").last().boundingBox();
+        expect(target.x + target.width <= neighbor.x || target.y + target.height <= neighbor.y).toBe(true);
+        await page.mouse.up();
+        await expect.poll(() => patches.some((patch) => patch.width !== undefined && patch.height !== undefined)).toBe(true);
+        const saved = patches.findLast((patch) => patch.width !== undefined);
+        if (scenario.maxWidth) expect(saved.width).toBeLessThanOrEqual(scenario.maxWidth);
+        if (scenario.maxHeight) expect(saved.height).toBeLessThanOrEqual(scenario.maxHeight);
+        if (scenario.diagonal) expect(saved.width <= 350 || saved.height <= 270).toBe(true);
+        expect(saved.width > 320 || saved.height > 240).toBe(true);
+        await page.reload();
+        await expect(widget).toHaveCSS("width", `${saved.width}px`);
+        await expect(widget).toHaveCSS("height", `${saved.height}px`);
+    });
+}
+
 test("calendar creates a planning widget and supports event CRUD", async ({ page }) => {
     await page.clock.install({ time: new Date("2026-11-02T10:00:00") });
     await page.addInitScript(() => localStorage.setItem("token", "calendar-e2e-token"));

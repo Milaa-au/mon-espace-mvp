@@ -22,6 +22,7 @@ function TimerWidget({
     onReset,
     onRefresh,
     onResize,
+    constrainResize,
     onDelete,
 }) {
     const [timerState, setTimerState] = useState(timer);
@@ -111,6 +112,7 @@ function TimerWidget({
             width={width}
             height={height}
             onResize={onResize}
+            constrainResize={constrainResize}
             onDelete={onDelete ? () => onDelete(id) : undefined}
         >
             <div className="timer-widget">

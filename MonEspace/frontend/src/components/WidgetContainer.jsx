@@ -13,6 +13,7 @@ function WidgetContainer({
     children,
     onDelete,
     onResize,
+    constrainResize,
     className = "",
     style = {},
 }) {
@@ -27,6 +28,7 @@ function WidgetContainer({
         transition,
     } = useDraggable({ id: draggableId });
     const [size, setSize] = useState({ width, height });
+    const sizeRef = useRef({ width, height });
     const resizeStart = useRef(null);
     const widgetClass = `widget-container widget-container--${type} ${className}`
         .trim();
@@ -44,6 +46,7 @@ function WidgetContainer({
 
     useEffect(() => {
         setSize({ width, height });
+        sizeRef.current = { width, height };
     }, [width, height]);
 
     function handleResizeStart(event) {
@@ -54,19 +57,25 @@ function WidgetContainer({
             pointerId: event.pointerId,
             x: event.clientX,
             y: event.clientY,
-            width: size.width,
+            width: Math.min(size.width, window.innerWidth - 32),
             height: size.height,
         };
+        sizeRef.current = { width: resizeStart.current.width, height: resizeStart.current.height };
     }
 
     function handleResizeMove(event) {
         if (!resizeStart.current) return;
 
         const bounds = resizeStart.current;
-        setSize({
+        const desiredSize = {
             width: Math.max(240, Math.min(window.innerWidth - 32, bounds.width + event.clientX - bounds.x)),
             height: Math.max(180, Math.min(window.innerHeight, bounds.height + event.clientY - bounds.y)),
-        });
+        };
+        const nextSize = constrainResize
+            ? constrainResize(id, desiredSize, sizeRef.current)
+            : desiredSize;
+        sizeRef.current = nextSize;
+        setSize(nextSize);
     }
 
     function handleResizeEnd(event) {
@@ -76,7 +85,7 @@ function WidgetContainer({
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
             event.currentTarget.releasePointerCapture(event.pointerId);
         }
-        onResize?.(id, size);
+        onResize?.(id, sizeRef.current);
     }
 
     return (

@@ -36,6 +36,7 @@ function PlanningWidget({
     onDeleteEvent,
     onEventsChange,
     onResize,
+    constrainResize,
     onDelete,
 }) {
     const [eventList, setEventList] = useState(events);
@@ -151,6 +152,7 @@ function PlanningWidget({
             width={width}
             height={height}
             onResize={onResize}
+            constrainResize={constrainResize}
             onDelete={onDelete ? () => onDelete(id) : undefined}
         >
             <div className="planning-widget__intro">

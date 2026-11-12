@@ -11,7 +11,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { API_URL } from "../api.js";
 import PlanningWidget from "../components/PlanningWidget";
 import TimerWidget from "../components/TimerWidget";
-import { dashboardCanvasWidth, findWidgetPosition } from "../widgetPlacement";
+import { constrainWidgetSize, dashboardCanvasWidth, findWidgetPosition } from "../widgetPlacement";
 
 const PostItWidget = lazy(() => import("../components/PostItWidget"));
 
@@ -382,6 +382,14 @@ function DashboardPage() {
             height: Math.round(size.height),
         });
 
+    const constrainResize = (widgetId, desiredSize, currentSize) => {
+        const widgets = [...postIts, ...planningWidgets, ...timers];
+        const widget = widgets.find((item) => item.id === widgetId);
+        return widget
+            ? constrainWidgetSize(widget, widgets, desiredSize, currentSize, window.innerWidth)
+            : currentSize;
+    };
+
     const addPlanningEvent = async (widgetId, event) => {
         const result = await authenticatedRequest(
             `/api/widgets/${widgetId}/events`,
@@ -503,6 +511,7 @@ function DashboardPage() {
                                     onChange={(newContent) => updatePostIt(postIt.id, newContent)}
                                     onColorChange={(color) => updatePostItColor(postIt.id, color)}
                                     onResize={saveWidgetSize}
+                                    constrainResize={constrainResize}
                                     onDelete={deletePostIt}
                                 />
                             ))}
@@ -528,6 +537,7 @@ function DashboardPage() {
                                     ))
                                 }
                                 onResize={saveWidgetSize}
+                                constrainResize={constrainResize}
                                 onDelete={deletePlanningWidget}
                             />
                         ))}
@@ -546,6 +556,7 @@ function DashboardPage() {
                                 onReset={resetTimer}
                                 onRefresh={() => refreshTimer(item.id)}
                                 onResize={saveWidgetSize}
+                                constrainResize={constrainResize}
                                 onDelete={deleteTimer}
                             />
                         ))}
