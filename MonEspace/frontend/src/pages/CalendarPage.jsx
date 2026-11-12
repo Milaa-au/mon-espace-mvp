@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import frLocale from "@fullcalendar/core/locales/fr";
 import { Link } from "react-router-dom";
 import { API_URL } from "../api.js";
+import { dashboardCanvasWidth, findWidgetPosition } from "../widgetPlacement";
 
 function CalendarIcon({ size = 26 }) {
     return (
@@ -34,6 +35,8 @@ function toLocalDateTime(value) {
 function CalendarPage() {
     const [theme] = useState(() => localStorage.getItem("dashboard-theme") || "light");
     const [board, setBoard] = useState(null);
+    const [boardWidgets, setBoardWidgets] = useState([]);
+    const creationPending = useRef(false);
     const [planningWidgets, setPlanningWidgets] = useState([]);
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [draft, setDraft] = useState(null);
@@ -55,6 +58,7 @@ function CalendarPage() {
                 }
 
                 setBoard(data.board);
+                setBoardWidgets(data.widgets);
                 setPlanningWidgets(
                     data.widgets
                         .filter((widget) => widget.type === "planning")
@@ -102,6 +106,7 @@ function CalendarPage() {
     );
 
     async function startNewEvent(dateInfo) {
+        if (creationPending.current) return;
         setError("");
         let targetWidget = planningWidgets[0];
 
@@ -111,14 +116,14 @@ function CalendarPage() {
                 return;
             }
 
+            creationPending.current = true;
             try {
                 const { widget } = await authenticatedRequest("/api/widgets", {
                     method: "POST",
                     body: JSON.stringify({
                         boardId: board.board_id,
                         type: "planning",
-                        posX: 24,
-                        posY: 24,
+                        ...findWidgetPosition(boardWidgets, 380, 420, dashboardCanvasWidth()),
                         width: 380,
                         height: 420,
                     }),
@@ -129,9 +134,12 @@ function CalendarPage() {
                     events: [],
                 };
                 setPlanningWidgets([targetWidget]);
+                setBoardWidgets((current) => [...current, widget]);
             } catch (requestError) {
                 setError(requestError.message);
                 return;
+            } finally {
+                creationPending.current = false;
             }
         }
 
@@ -285,7 +293,7 @@ function CalendarPage() {
                         />
                         {planningWidgets.length === 0 && (
                             <p className="calendar-empty-note">
-                                Aucun planning n’est encore créé. Ajoute un widget Planning depuis le tableau de bord.
+                                Clique sur une date pour créer ton premier événement et son planning.
                             </p>
                         )}
                     </section>

@@ -10,6 +10,7 @@ const {
 const router = express.Router();
 
 const ALLOWED_TYPES = ["postit", "planning", "timer"];
+const ALLOWED_POSTIT_COLORS = ["yellow", "pink", "blue", "green", "purple"];
 const ALLOWED_PATCH_FIELDS = [
     "posX",
     "posY",
@@ -17,6 +18,7 @@ const ALLOWED_PATCH_FIELDS = [
     "height",
     "zIndex",
     "content",
+    "color",
 ];
 
 // POST /api/widgets
@@ -79,6 +81,10 @@ router.post("/", authMiddleware, async (req, res) => {
             return res.status(400).json({
                 message: "Le contenu du Post-it doit être du texte de 100000 caractères maximum.",
             });
+        }
+
+        if (type === "postit" && data.color !== undefined && !ALLOWED_POSTIT_COLORS.includes(data.color)) {
+            return res.status(400).json({ message: "Couleur de Post-it invalide." });
         }
 
         if (
@@ -179,6 +185,10 @@ router.patch("/:id", authMiddleware, async (req, res) => {
                         message: "Le contenu du Post-it doit être du texte de 100000 caractères maximum.",
                     });
                 }
+            } else if (field === "color") {
+                if (!ALLOWED_POSTIT_COLORS.includes(value)) {
+                    return res.status(400).json({ message: "Couleur de Post-it invalide." });
+                }
             } else if (!Number.isSafeInteger(value)) {
                 return res.status(400).json({
                     message: `${field} doit être un entier.`,
@@ -210,9 +220,9 @@ router.patch("/:id", authMiddleware, async (req, res) => {
             });
         }
 
-        if (fields.content !== undefined && ownershipResult.rows[0].type !== "postit") {
+        if ((fields.content !== undefined || fields.color !== undefined) && ownershipResult.rows[0].type !== "postit") {
             return res.status(400).json({
-                message: "Seul le contenu d'un Post-it peut être modifié ici.",
+                message: "Seuls le contenu et la couleur d'un Post-it peuvent être modifiés ici.",
             });
         }
 

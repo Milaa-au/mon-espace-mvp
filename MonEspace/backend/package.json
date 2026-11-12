@@ -6,8 +6,10 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test:auth-flow": "node --test test/auth-flow.test.js",
-    "test": "node --test test/widget-content-api.test.js"
+      "test:api": "node --test test/api-endpoints.test.js",
+    "test:auth-routes": "node --test test/auth-routes.test.js",
+      "test:auth-flow": "node --test test/auth-flow.test.js",
+      "test": "node --test test/widget-content-api.test.js test/auth-routes.test.js"
   },
   "keywords": [],
   "author": "",

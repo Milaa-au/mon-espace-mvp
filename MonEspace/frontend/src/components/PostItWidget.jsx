@@ -4,6 +4,14 @@ import { Editor } from "@tinymce/tinymce-react";
 import WidgetContainer from "./WidgetContainer";
 import "./PostItWidget.css";
 
+const COLORS = {
+  yellow: { label: "Jaune", background: "#fff2a8" },
+  pink: { label: "Rose", background: "#ffd6e3" },
+  blue: { label: "Bleu", background: "#d4eaff" },
+  green: { label: "Vert", background: "#dcf3cf" },
+  purple: { label: "Violet", background: "#e9dcff" },
+};
+
 function getPlainText(html) {
   const parsedContent = new DOMParser().parseFromString(html, "text/html");
   return parsedContent.body.textContent ?? "";
@@ -24,12 +32,18 @@ function PostItWidget({
   height,
   title = "Mon Post-it",
   content = "",
+  color = "yellow",
+  colorSaving = false,
   onChange,
+  onColorChange,
   onResize,
   onDelete,
 }) {
   const saveTimeout = useRef(null);
   const onChangeRef = useRef(onChange);
+  const editorRef = useRef(null);
+  const selectedColor = COLORS[color] ? color : "yellow";
+  const background = COLORS[selectedColor].background;
   const tinyMceApiKey = import.meta.env.VITE_TINYMCE_API_KEY;
   // Repli sur un textarea si la clé manque ou si TinyMCE passe en lecture seule
   // (domaine non autorisé dans le tableau de bord TinyMCE).
@@ -43,6 +57,12 @@ function PostItWidget({
   useEffect(() => {
     setPlainText(getPlainText(content));
   }, [content]);
+
+  useEffect(() => {
+    if (editorRef.current?.getBody()) {
+      editorRef.current.getBody().style.backgroundColor = background;
+    }
+  }, [background]);
 
   useEffect(() => () => clearTimeout(saveTimeout.current), []);
 
@@ -80,10 +100,27 @@ function PostItWidget({
       position={position}
       width={width}
       height={height}
+      style={{ "--postit-color": background }}
       onResize={onResize}
       onDelete={onDelete ? () => onDelete(id) : undefined}
     >
       <div className="postit-editor">
+        <div className="postit-colors" role="group" aria-label="Couleur du Post-it">
+          <span>Couleur</span>
+          {Object.entries(COLORS).map(([name, option]) => (
+            <button
+              key={name}
+              type="button"
+              className="postit-colors__swatch"
+              style={{ backgroundColor: option.background }}
+              aria-label={option.label}
+              aria-pressed={selectedColor === name}
+              title={option.label}
+              disabled={colorSaving}
+              onClick={() => onColorChange?.(name)}
+            />
+          ))}
+        </div>
         {usePlainTextEditor ? (
           <textarea
             className="postit-editor__body"
@@ -98,7 +135,13 @@ function PostItWidget({
             apiKey={tinyMceApiKey}
             initialValue={content}
             onInit={(_event, editor) => {
-              if (editor.mode.isReadOnly()) setUsePlainTextEditor(true);
+              if (editor.mode.isReadOnly()) {
+                editorRef.current = null;
+                setUsePlainTextEditor(true);
+              } else {
+                editorRef.current = editor;
+                editor.getBody().style.backgroundColor = background;
+              }
             }}
             onEditorChange={handleEditorChange}
             onBlur={flushSave}
@@ -113,7 +156,7 @@ function PostItWidget({
               toolbar_mode: "sliding",
               font_family_formats: "DM Sans=dm sans,sans-serif; Georgia=georgia,serif; Arial=arial,sans-serif; Monospace=monospace",
               font_size_formats: "14px 16px 20px 24px 30px",
-              content_style: "body { font-family: 'DM Sans', sans-serif; font-size: 16px; color: #422006; background: transparent; }",
+              content_style: `body { font-family: 'DM Sans', sans-serif; font-size: 16px; color: #422006; background: ${background}; }`,
             }}
           />
         )}

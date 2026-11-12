@@ -96,7 +96,26 @@
 }
 
 .widget-container--postit {
-    background: #fef9c3;
+    background: var(--postit-color, #fff2a8);
+    border: 0;
+    border-radius: 4px 4px 18px 4px;
+    box-shadow: 0 12px 24px rgb(75 60 28 / 18%), 0 2px 5px rgb(75 60 28 / 10%);
+}
+
+.widget-container--postit .widget-container__header {
+    border-color: rgb(112 75 35 / 15%);
+    background: rgb(112 75 35 / 5%);
+}
+
+.widget-container--postit .widget-container__title,
+.widget-container--postit .widget-container__drag,
+.widget-container--postit .widget-container__delete,
+.widget-container--postit .widget-container__resize {
+    color: #704b23;
+}
+
+.widget-container--postit .widget-container__content {
+    padding: 12px 16px 16px;
 }
 
 .widget-container--planning {

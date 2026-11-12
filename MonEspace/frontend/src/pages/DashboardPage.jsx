@@ -1,5 +1,5 @@
 
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import {
     DndContext,
     KeyboardSensor,
@@ -11,6 +11,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { API_URL } from "../api.js";
 import PlanningWidget from "../components/PlanningWidget";
 import TimerWidget from "../components/TimerWidget";
+import { dashboardCanvasWidth, findWidgetPosition } from "../widgetPlacement";
 
 const PostItWidget = lazy(() => import("../components/PostItWidget"));
 
@@ -48,6 +49,10 @@ function DashboardPage() {
     const [planningWidgets, setPlanningWidgets] = useState([]);
     const [timers, setTimers] = useState([]);
     const [showWidgetMenu, setShowWidgetMenu] = useState(false);
+    const [creatingWidget, setCreatingWidget] = useState(false);
+    const creationPending = useRef(false);
+    const [savingColors, setSavingColors] = useState([]);
+    const colorRequests = useRef(new Set());
     const [theme, setTheme] = useState(
         () => localStorage.getItem("dashboard-theme") || "light"
     );
@@ -83,6 +88,7 @@ function DashboardPage() {
                             id: widget.widget_id,
                             title: "Mon Post-it",
                             content: widget.data?.content ?? "",
+                            color: widget.data?.color ?? "yellow",
                             posX: widget.pos_x,
                             posY: widget.pos_y,
                             width: widget.width,
@@ -142,25 +148,31 @@ function DashboardPage() {
         return data;
     };
 
-    const getNextPosition = () => {
-        const index = postIts.length + planningWidgets.length + timers.length;
-        return {
-            posX: 24 + (index % 3) * 340,
-            posY: 24 + Math.floor(index / 3) * 280,
-        };
+    const getNextPosition = (width, height) =>
+        findWidgetPosition([...postIts, ...planningWidgets, ...timers], width, height, dashboardCanvasWidth());
+
+    const startWidgetCreation = () => {
+        if (!board || creationPending.current) return false;
+        creationPending.current = true;
+        setCreatingWidget(true);
+        return true;
+    };
+
+    const finishWidgetCreation = () => {
+        creationPending.current = false;
+        setCreatingWidget(false);
     };
 
     const addPostIt = async () => {
-        if (!board) return;
+        if (!startWidgetCreation()) return;
 
-        const position = getNextPosition();
         try {
             const { widget } = await authenticatedRequest("/api/widgets", {
                 method: "POST",
                 body: JSON.stringify({
                     boardId: board.board_id,
                     type: "postit",
-                    ...position,
+                    ...getNextPosition(320, 240),
                     width: 320,
                     height: 240,
                 }),
@@ -171,6 +183,7 @@ function DashboardPage() {
                     id: widget.widget_id,
                     title: "Mon Post-it",
                     content: widget.data?.content ?? "",
+                    color: widget.data?.color ?? "yellow",
                     posX: widget.pos_x,
                     posY: widget.pos_y,
                     width: widget.width,
@@ -181,11 +194,13 @@ function DashboardPage() {
             setShowWidgetMenu(false);
         } catch (requestError) {
             setError(requestError.message);
+        } finally {
+            finishWidgetCreation();
         }
     };
 
     const addPlanningWidget = async () => {
-        if (!board) return;
+        if (!startWidgetCreation()) return;
 
         try {
             const { widget } = await authenticatedRequest("/api/widgets", {
@@ -193,7 +208,7 @@ function DashboardPage() {
                 body: JSON.stringify({
                     boardId: board.board_id,
                     type: "planning",
-                    ...getNextPosition(),
+                    ...getNextPosition(380, 420),
                     width: 380,
                     height: 420,
                 }),
@@ -214,11 +229,13 @@ function DashboardPage() {
             setShowWidgetMenu(false);
         } catch (requestError) {
             setError(requestError.message);
+        } finally {
+            finishWidgetCreation();
         }
     };
 
     const addTimer = async () => {
-        if (!board) return;
+        if (!startWidgetCreation()) return;
 
         try {
             const { widget } = await authenticatedRequest("/api/widgets", {
@@ -226,7 +243,7 @@ function DashboardPage() {
                 body: JSON.stringify({
                     boardId: board.board_id,
                     type: "timer",
-                    ...getNextPosition(),
+                    ...getNextPosition(320, 280),
                     width: 320,
                     height: 280,
                     data: { durationSeconds: 1500 },
@@ -247,6 +264,8 @@ function DashboardPage() {
             setShowWidgetMenu(false);
         } catch (requestError) {
             setError(requestError.message);
+        } finally {
+            finishWidgetCreation();
         }
     };
 
@@ -333,7 +352,14 @@ function DashboardPage() {
             setError("");
         } catch (requestError) {
             setItems((current) => current.map((item) =>
-                item.id === widgetId ? { ...item, ...previous } : item
+                item.id === widgetId
+                    ? {
+                        ...item,
+                        ...Object.fromEntries(Object.keys(changes)
+                            .filter((key) => item[key] === changes[key])
+                            .map((key) => [key, previous[key]])),
+                    }
+                    : item
             ));
             setError(requestError.message);
         }
@@ -392,6 +418,17 @@ function DashboardPage() {
     };
 
     const updatePostIt = (id, content) => updateWidget(id, { content });
+    const updatePostItColor = async (id, color) => {
+        if (colorRequests.current.has(id)) return;
+        colorRequests.current.add(id);
+        setSavingColors((current) => [...current, id]);
+        try {
+            await updateWidget(id, { color });
+        } finally {
+            colorRequests.current.delete(id);
+            setSavingColors((current) => current.filter((item) => item !== id));
+        }
+    };
 
     const deletePostIt = async (id) => {
         try {
@@ -432,7 +469,15 @@ function DashboardPage() {
                 {error && <p className="error-message" role="alert">{error}</p>}
 
                 <DndContext sensors={sensors} onDragEnd={saveWidgetPosition}>
-                    <div className="widget-canvas">
+                    <div className="widget-canvas-scroll">
+                    <div className="widget-canvas" style={{
+                        minWidth: Math.max(320, ...[...postIts, ...planningWidgets, ...timers].map(
+                            (widget) => (widget.posX ?? 0) + Math.min(widget.width, window.innerWidth - 32) + 24
+                        )),
+                        minHeight: Math.max(500, ...[...postIts, ...planningWidgets, ...timers].map(
+                            (widget) => (widget.posY ?? 0) + widget.height + 24
+                        )),
+                    }}>
                         <Suspense fallback={null}>
                             {postIts.map((postIt) => (
                                 <PostItWidget
@@ -443,7 +488,10 @@ function DashboardPage() {
                                     height={postIt.height}
                                     title={postIt.title}
                                     content={postIt.content}
+                                    color={postIt.color}
+                                    colorSaving={savingColors.includes(postIt.id)}
                                     onChange={(newContent) => updatePostIt(postIt.id, newContent)}
+                                    onColorChange={(color) => updatePostItColor(postIt.id, color)}
                                     onResize={saveWidgetSize}
                                     onDelete={deletePostIt}
                                 />
@@ -492,6 +540,7 @@ function DashboardPage() {
                             />
                         ))}
                     </div>
+                    </div>
                 </DndContext>
             </section>
 
@@ -526,7 +575,7 @@ function DashboardPage() {
                             aria-label="Ajouter un Post-it"
                             title="Ajouter un Post-it"
                             onClick={addPostIt}
-                            disabled={!board}
+                            disabled={!board || creatingWidget}
                         >
                             <InlineIcon name="note" size={22} aria-hidden="true" />
                         </button>
@@ -537,7 +586,7 @@ function DashboardPage() {
                             aria-label="Ajouter un planning"
                             title="Ajouter un planning"
                             onClick={addPlanningWidget}
-                            disabled={!board}
+                            disabled={!board || creatingWidget}
                         >
                             <InlineIcon name="calendar" size={22} aria-hidden="true" />
                         </button>
@@ -548,7 +597,7 @@ function DashboardPage() {
                             aria-label="Ajouter un timer"
                             title="Ajouter un timer"
                             onClick={addTimer}
-                            disabled={!board}
+                            disabled={!board || creatingWidget}
                         >
                             <InlineIcon name="timer" size={22} aria-hidden="true" />
                         </button>

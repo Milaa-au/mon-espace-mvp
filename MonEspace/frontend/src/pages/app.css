@@ -276,8 +276,18 @@ input {
   position: relative;
   min-height: calc(100vh - 230px);
   min-width: 100%;
-  margin-top: 16px;
-  overflow: visible;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 20px;
+  background-color: var(--dashboard-surface);
+  background-image: radial-gradient(circle, rgb(100 116 139 / 35%) 1.3px, transparent 1.4px);
+  background-size: 22px 22px;
+  box-shadow: inset 0 2px 12px rgb(15 23 42 / 4%), 0 12px 32px rgb(15 23 42 / 5%);
+}
+
+.widget-canvas-scroll {
+  margin-top: 18px;
+  overflow-x: auto;
+  border-radius: 20px;
 }
 
 .dashboard-shell--dark .widgets-header {
@@ -288,6 +298,18 @@ input {
   border-color: var(--dashboard-border);
   background-color: var(--dashboard-surface);
   color: var(--dashboard-fg);
+}
+
+.dashboard-shell--dark .widget-container--postit {
+  background: var(--postit-color);
+  color: #422006;
+}
+
+.dashboard-shell--dark .widget-container--postit .widget-container__title,
+.dashboard-shell--dark .widget-container--postit .widget-container__drag,
+.dashboard-shell--dark .widget-container--postit .widget-container__delete,
+.dashboard-shell--dark .widget-container--postit .widget-container__resize {
+  color: #704b23;
 }
 
 .dashboard-shell--dark .dashboard-header,
@@ -321,16 +343,9 @@ input {
   color: var(--dashboard-fg);
 }
 
-.dashboard-shell--dark .postit-editor__toolbar {
-  border-color: var(--dashboard-border);
-}
-
-.dashboard-shell--dark .postit-editor__toolbar button,
-.dashboard-shell--dark .postit-editor__toolbar select,
 .dashboard-shell--dark .postit-editor__body {
-  border-color: var(--dashboard-border);
-  background: #171d22;
-  color: var(--dashboard-fg);
+  background: var(--postit-color);
+  color: #422006;
 }
 
 .dashboard-shell--dark .timer-widget__display {
@@ -433,8 +448,23 @@ input {
 }
 
 .calendar-shell {
+  --dashboard-bg: #f4f6fb;
+  --dashboard-fg: #1f2937;
+  --dashboard-surface: #fff;
+  --dashboard-border: #dbe2ea;
   min-height: 100vh;
+  padding: 32px clamp(20px, 6vw, 88px) 48px;
   padding-bottom: 48px;
+  color: var(--dashboard-fg);
+  background: radial-gradient(circle at 8% 0%, #dbeafe, transparent 32%), var(--dashboard-bg);
+}
+
+.calendar-shell.dashboard-shell--dark {
+  --dashboard-bg: #15191e;
+  --dashboard-fg: #e5e7eb;
+  --dashboard-surface: #232a31;
+  --dashboard-border: #3a454e;
+  background: radial-gradient(circle at 8% 0%, rgb(54 91 93 / 24%), transparent 32%), var(--dashboard-bg);
 }
 
 .calendar-header {
@@ -476,17 +506,66 @@ input {
 
 .calendar-main {
   min-width: 0;
-  padding: 12px;
+  padding: clamp(14px, 2vw, 26px);
   border: 1px solid var(--dashboard-border);
-  border-radius: 8px;
+  border-radius: 20px;
   background: var(--dashboard-surface);
+  box-shadow: 0 14px 40px rgb(15 23 42 / 7%);
 }
 
 .calendar-detail {
   min-width: 0;
-  border-left: 1px solid var(--dashboard-border);
-  padding-left: 24px;
+  align-self: start;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 20px;
+  padding: 24px;
+  background: var(--dashboard-surface);
+  box-shadow: 0 14px 40px rgb(15 23 42 / 7%);
   overflow-wrap: anywhere;
+}
+
+.calendar-detail > p {
+  margin: 0;
+  line-height: 1.65;
+}
+
+.calendar-main .fc {
+  --fc-border-color: var(--dashboard-border);
+  --fc-today-bg-color: rgb(20 184 166 / 10%);
+  --fc-event-bg-color: #146b64;
+  --fc-event-border-color: #146b64;
+}
+
+.calendar-main .fc .fc-toolbar-title {
+  font-size: clamp(1.15rem, 2vw, 1.6rem);
+  text-transform: capitalize;
+}
+
+.calendar-main .fc .fc-button-primary {
+  border-color: #146b64;
+  background: #146b64;
+  font-weight: 700;
+}
+
+.calendar-main .fc .fc-button-primary:hover {
+  border-color: #0e5852;
+  background: #0e5852;
+}
+
+.calendar-main .fc .fc-col-header-cell-cushion,
+.calendar-main .fc .fc-daygrid-day-number {
+  padding: 10px;
+  color: var(--dashboard-fg);
+  text-decoration: none;
+}
+
+.calendar-main .fc .fc-daygrid-day {
+  cursor: pointer;
+}
+
+.calendar-main .fc .fc-daygrid-event {
+  border-radius: 6px;
+  padding: 2px 4px;
 }
 
 .calendar-event-form {
@@ -568,18 +647,73 @@ input {
 }
 
 .dashboard-shell--dark .fc a {
-  color: #a7f3d0;
+  color: var(--dashboard-fg);
+}
+
+.calendar-link,
+.logout-button,
+.calendar-back-link,
+.calendar-form-actions button,
+.planning-widget__form-actions button,
+.planning-widget__event-actions button,
+.timer-widget__duration button,
+.timer-widget__actions button {
+  border-radius: 10px;
+  font-weight: 700;
+  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+}
+
+.calendar-link:hover,
+.logout-button:hover,
+.calendar-back-link:hover,
+.calendar-form-actions button:hover,
+.planning-widget__form-actions button:hover,
+.planning-widget__event-actions button:hover,
+.timer-widget__duration button:not(:disabled):hover,
+.timer-widget__actions button:not(:disabled):hover {
+  border-color: #14b8a6;
+  box-shadow: 0 5px 14px rgb(15 118 110 / 16%);
+  transform: translateY(-1px);
+}
+
+.widget-launcher-toggle {
+  border-radius: 14px;
+}
+
+.widget-launcher-menu {
+  min-width: 0;
+  border-radius: 14px;
+}
+
+.widget-launcher-menu .widget-launcher-icon {
+  width: 52px;
+  height: 48px;
+  border-radius: 10px;
+}
+
+.widget-container__drag:hover,
+.widget-container__resize:hover {
+  background: rgb(100 116 139 / 15%);
+}
+
+:is(.calendar-link, .logout-button, .calendar-back-link, .calendar-form-actions button,
+    .planning-widget__form-actions button, .planning-widget__event-actions button,
+    .timer-widget__duration button, .timer-widget__actions button):focus-visible {
+  outline: 2px solid #14b8a6;
+  outline-offset: 3px;
 }
 
 @media (max-width: 760px) {
+  .dashboard-header {
+    flex-wrap: wrap;
+  }
+
   .calendar-layout {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .calendar-detail {
-    border-top: 1px solid var(--dashboard-border);
-    border-left: 0;
-    padding: 18px 0 0;
+    padding: 20px;
   }
 
   .calendar-header {
@@ -587,6 +721,15 @@ input {
   }
 }
 @media (max-width: 520px) {
+  .calendar-main .fc .fc-toolbar {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .calendar-header {
+    flex-wrap: wrap;
+  }
+
   .app-shell {
     padding: 16px;
   }

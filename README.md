@@ -24,7 +24,7 @@ Projet de fin de spécialisation — Holberton School (MVP, version 1.0).
 - **Compte utilisateur** : inscription, connexion par email ou pseudo, session par token JWT.
 - **Tableau de bord personnel** : un tableau par utilisateur, créé automatiquement à la première visite.
 - **Trois widgets** :
-  - **Post-it** : note à mise en forme riche (gras, italique, listes, polices, tailles) grâce à TinyMCE.
+  - **Post-it** : note à mise en forme riche (gras, italique, listes, polices, tailles) grâce à TinyMCE, avec une couleur personnalisable enregistrée.
   - **Planning** : liste d'événements datés, avec ajout, modification et suppression.
   - **Timer** : minuteur configurable (type Pomodoro) avec démarrer, pause et réinitialisation. Il reste exact après un rechargement de la page.
 - **Glisser-déposer et redimensionnement** : position et taille de chaque widget sont sauvegardées.
@@ -136,7 +136,7 @@ Les migrations se trouvent dans `MonEspace/backend/src/db/migrations/` (`001` à
 | GET | `/api/auth/me` | Utilisateur connecté |
 | GET | `/api/boards` | Tableau de l'utilisateur et ses widgets |
 | POST | `/api/widgets` | Création d'un widget |
-| PATCH | `/api/widgets/:id` | Position, taille ou contenu d'un Post-it |
+| PATCH | `/api/widgets/:id` | Position, taille, contenu ou couleur d'un Post-it |
 | DELETE | `/api/widgets/:id` | Suppression d'un widget |
 | GET, POST | `/api/widgets/:widgetId/events` | Liste et ajout d'événements |
 | PATCH, DELETE | `/api/widgets/:widgetId/events/:eventId` | Modification et suppression d'un événement |
@@ -152,7 +152,7 @@ Toutes les routes, hors inscription et connexion, exigent un token JWT valide da
 |---|---|---|
 | `GET` | Lire, sans rien modifier | `GET /api/boards` charge le tableau |
 | `POST` | Créer une ressource ou déclencher une action | `POST /api/widgets` ajoute un widget |
-| `PATCH` | Modifier une partie d'une ressource | `PATCH /api/widgets/12` change position, taille ou contenu |
+| `PATCH` | Modifier une partie d'une ressource | `PATCH /api/widgets/12` change position, taille, contenu ou couleur |
 | `DELETE` | Supprimer | `DELETE /api/widgets/12` retire un widget |
 
 ### Ce que le client peut demander à l'API
@@ -164,7 +164,7 @@ Toutes les routes, hors inscription et connexion, exigent un token JWT valide da
 | Vérifier sa session | `GET /api/auth/me` | Contrôle le token et renvoie l'identité de l'utilisateur |
 | Ouvrir son tableau | `GET /api/boards` | Crée le tableau s'il n'existe pas, renvoie les widgets de l'utilisateur |
 | Ajouter un widget | `POST /api/widgets` | Crée le widget et sa ligne associée (`postit`, `planning` ou `timer`) |
-| Déplacer, redimensionner, écrire dans un Post-it | `PATCH /api/widgets/:id` | Met à jour position, taille ou contenu |
+| Déplacer, redimensionner, écrire dans un Post-it ou changer sa couleur | `PATCH /api/widgets/:id` | Met à jour position, taille, contenu ou couleur |
 | Supprimer un widget | `DELETE /api/widgets/:id` | Supprime le widget et, en cascade, son contenu |
 | Gérer le planning | `GET`, `POST /api/widgets/:id/events`, `PATCH`, `DELETE .../:eventId` | Liste, ajoute, modifie, supprime des événements |
 | Utiliser le timer | `GET .../timer`, `PATCH .../duration`, `POST .../start`, `pause`, `reset` | Met à jour l'état du timer et renvoie l'état recalculé |
@@ -262,7 +262,15 @@ cd MonEspace/backend && npm ci && npm run dev
 cd MonEspace && npm ci && npm run dev
 ```
 
-**Tests** : `npm test` dans `MonEspace/backend` pour l'API, `npm run test:e2e` dans `MonEspace` pour Playwright.
+**Tests** (depuis `MonEspace/backend`) :
+
+| Commande | Contenu | Prérequis |
+|---|---|---|
+| `npm run test:api` | Tous les endpoints (auth, boards, widgets, planning, timer) et l'isolation entre utilisateurs | PostgreSQL local + migrations (l'API est démarrée par le test) |
+| `npm test` | Tests unitaires avec base simulée (widgets, authentification) | Aucun |
+| `npm run test:auth-flow` | Parcours inscription → connexion → tableau | PostgreSQL local + API lancée (`npm run dev`) |
+
+Les tests de bout en bout du frontend se lancent avec `npm run test:e2e` dans `MonEspace` (Playwright).
 
 ## Variables d'environnement
 

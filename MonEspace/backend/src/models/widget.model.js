@@ -173,6 +173,7 @@ async function updateWidget(widgetId, fields) {
     const updates = [];
     const values = [];
     const hasContent = fields.content !== undefined;
+    const hasColor = fields.color !== undefined;
 
     for (const [key, column] of Object.entries(allowedFields)) {
         if (fields[key] !== undefined) {
@@ -181,7 +182,7 @@ async function updateWidget(widgetId, fields) {
         }
     }
 
-    if (updates.length === 0 && !hasContent) {
+    if (updates.length === 0 && !hasContent && !hasColor) {
         return null;
     }
 
@@ -206,13 +207,24 @@ async function updateWidget(widgetId, fields) {
             }
         }
 
-        if (hasContent) {
+        if (hasContent || hasColor) {
+            const postitUpdates = [];
+            const postitValues = [];
+            if (hasContent) {
+                postitValues.push(fields.content);
+                postitUpdates.push(`content = $${postitValues.length}`);
+            }
+            if (hasColor) {
+                postitValues.push(fields.color);
+                postitUpdates.push(`color = $${postitValues.length}`);
+            }
+            postitValues.push(widgetId);
             const result = await client.query(
                 `UPDATE postit
-                 SET content = $1
-                 WHERE widget_id = $2
+                 SET ${postitUpdates.join(", ")}
+                 WHERE widget_id = $${postitValues.length}
                  RETURNING widget_id`,
-                [fields.content, widgetId]
+                postitValues
             );
 
             if (result.rowCount === 0) {
